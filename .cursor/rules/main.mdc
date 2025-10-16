@@ -1,0 +1,10 @@
+---
+description: Основные правила и архитектура CMS
+globs:
+alwaysApply: true
+---
+
+Все правила описаны в @docs/arch-rules.md
+Требования к CMS описаны в @docs/requirements.md
+
+При изменении проекта нужно вносить описание архитектуры в документ @docs/architecture.md и использовать его в работе.
