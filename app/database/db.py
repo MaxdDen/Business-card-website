@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import logging
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple
@@ -67,5 +68,36 @@ def smoke_test() -> bool:
         cur = conn.execute("SELECT 1 AS ok")
         row = cur.fetchone()
         return bool(row and row.get("ok") == 1)  # type: ignore[union-attr]
+
+
+def ensure_admin_user_exists() -> None:
+    """Проверяет наличие администратора и создает его при необходимости"""
+    import os
+    from app.auth.security import hash_password
+    
+    admin_email = os.getenv("DATABASE_ROOT")
+    admin_password = os.getenv("DATABASE_ROOT_PASS")
+    
+    if not admin_email or not admin_password:
+        logging.warning("DATABASE_ROOT or DATABASE_ROOT_PASS not set, skipping admin user creation")
+        return
+    
+    # Проверяем, есть ли уже пользователь с таким email
+    existing_user = query_one("SELECT id FROM users WHERE email = ?", (admin_email,))
+    if existing_user:
+        logging.info(f"Admin user {admin_email} already exists")
+        return
+    
+    # Создаем администратора
+    try:
+        password_hash = hash_password(admin_password)
+        user_id = execute(
+            "INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?)",
+            (admin_email, password_hash, "admin")
+        )
+        logging.info(f"Created admin user {admin_email} with ID {user_id}")
+    except Exception as e:
+        logging.error(f"Failed to create admin user: {e}")
+        raise
 
 

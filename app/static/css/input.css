@@ -1,5 +1,14 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
+@theme {
+  --font-sans: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell,
+    Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
 
+/* Enable dark: variant via data-theme attribute */
+@variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@utility container {
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
