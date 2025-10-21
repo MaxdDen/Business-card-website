@@ -35,6 +35,7 @@ app.include_router(cms_router)
 
 # Static and templates
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 templates = Jinja2Templates(directory="app/templates")
 
 @app.get("/health")

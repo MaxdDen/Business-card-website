@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест загрузки изображений</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin: 10px 0; }
+        label { display: block; margin-bottom: 5px; }
+        input, select { padding: 8px; width: 200px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>Тест загрузки изображений</h1>
+    
+    <form id="uploadForm" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="imageType">Тип изображения:</label>
+            <select id="imageType" name="image_type" required>
+                <option value="">Выберите тип</option>
+                <option value="logo">Логотип</option>
+                <option value="slider">Слайдер</option>
+                <option value="background">Фон</option>
+                <option value="favicon">Favicon</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="imageFile">Файл изображения:</label>
+            <input type="file" id="imageFile" name="file" accept="image/*" required>
+        </div>
+        
+        <button type="submit">Загрузить</button>
+    </form>
+    
+    <div id="result" class="result" style="display: none;"></div>
+    
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            const fileInput = document.getElementById('imageFile');
+            const typeSelect = document.getElementById('imageType');
+            const resultDiv = document.getElementById('result');
+            
+            if (!fileInput.files[0] || !typeSelect.value) {
+                showResult('Пожалуйста, выберите файл и тип изображения', 'error');
+                return;
+            }
+            
+            formData.append('file', fileInput.files[0]);
+            formData.append('image_type', typeSelect.value);
+            
+            console.log('Отправка данных:');
+            console.log('Файл:', fileInput.files[0].name, fileInput.files[0].size, 'байт');
+            console.log('Тип:', typeSelect.value);
+            
+            try {
+                const response = await fetch('/cms/api/images/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('Ответ сервера:', response.status, response.statusText);
+                
+                const data = await response.json();
+                console.log('JSON ответ:', data);
+                
+                if (data.success) {
+                    showResult('Изображение успешно загружено!', 'success');
+                } else {
+                    showResult('Ошибка: ' + data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Ошибка запроса:', error);
+                showResult('Ошибка запроса: ' + error.message, 'error');
+            }
+        });
+        
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = 'result ' + type;
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

@@ -25,22 +25,290 @@
 
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 class="text-lg font-medium text-gray-900 dark:text-white">SEO-панель</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- SEO Form -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h2 class="text-lg font-medium text-gray-900 dark:text-white">Настройки SEO</h2>
+                </div>
+                <div class="p-6">
+                    <!-- Page and Language Selection -->
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label for="page-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Страница
+                            </label>
+                            <select id="page-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                                <option value="home">Главная</option>
+                                <option value="about">О компании</option>
+                                <option value="catalog">Каталог</option>
+                                <option value="contacts">Контакты</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="lang-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Язык
+                            </label>
+                            <select id="lang-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                                <option value="ru">Русский</option>
+                                <option value="en">English</option>
+                                <option value="ua">Українська</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- SEO Fields -->
+                    <form id="seo-form">
+                        <div class="space-y-6">
+                            <!-- Title -->
+                            <div>
+                                <label for="seo-title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Title <span class="text-red-500">*</span>
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="seo-title" 
+                                    name="title"
+                                    maxlength="60"
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                    placeholder="Заголовок страницы (до 60 символов)"
+                                >
+                                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                    <span id="title-counter">0</span>/60 символов
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            <div>
+                                <label for="seo-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Description
+                                </label>
+                                <textarea 
+                                    id="seo-description" 
+                                    name="description"
+                                    rows="3"
+                                    maxlength="160"
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                    placeholder="Описание страницы (до 160 символов)"
+                                ></textarea>
+                                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                    <span id="description-counter">0</span>/160 символов
+                                </div>
+                            </div>
+
+                            <!-- Keywords -->
+                            <div>
+                                <label for="seo-keywords" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Keywords
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="seo-keywords" 
+                                    name="keywords"
+                                    maxlength="255"
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                    placeholder="Ключевые слова через запятую (до 255 символов)"
+                                >
+                                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                    <span id="keywords-counter">0</span>/255 символов
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Save Button -->
+                        <div class="mt-8 flex justify-end">
+                            <button 
+                                type="submit" 
+                                id="save-seo-btn"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <span id="save-text">Сохранить</span>
+                                <span id="saving-text" class="hidden">Сохранение...</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="p-6">
-                <div class="text-center py-12">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                    </svg>
-                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">Раздел в разработке</h3>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        Функционал SEO-настроек будет реализован на следующем этапе.
-                    </p>
+
+            <!-- Preview Panel -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h2 class="text-lg font-medium text-gray-900 dark:text-white">Предпросмотр</h2>
+                </div>
+                <div class="p-6">
+                    <!-- Google Search Preview -->
+                    <div class="mb-6">
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Как будет выглядеть в Google:</h3>
+                        <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+                            <div id="google-preview" class="space-y-2">
+                                <div class="text-blue-600 dark:text-blue-400 text-lg font-medium">
+                                    <span id="preview-title">Введите заголовок</span>
+                                </div>
+                                <div class="text-green-600 dark:text-green-400 text-sm">
+                                    <span id="preview-url">example.com</span>
+                                </div>
+                                <div class="text-gray-600 dark:text-gray-300 text-sm">
+                                    <span id="preview-description">Введите описание</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- HTML Preview -->
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">HTML код:</h3>
+                        <div class="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                            <pre class="text-sm text-gray-800 dark:text-gray-200"><code id="html-preview">&lt;title&gt;Введите заголовок&lt;/title&gt;
+&lt;meta name="description" content="Введите описание"&gt;
+&lt;meta name="keywords" content="Введите ключевые слова"&gt;</code></pre>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- Status Messages -->
+        <div id="status-message" class="hidden mt-4 p-4 rounded-md"></div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const pageSelect = document.getElementById('page-select');
+    const langSelect = document.getElementById('lang-select');
+    const seoForm = document.getElementById('seo-form');
+    const saveBtn = document.getElementById('save-seo-btn');
+    const statusMessage = document.getElementById('status-message');
+    
+    const titleInput = document.getElementById('seo-title');
+    const descriptionInput = document.getElementById('seo-description');
+    const keywordsInput = document.getElementById('seo-keywords');
+    
+    const titleCounter = document.getElementById('title-counter');
+    const descriptionCounter = document.getElementById('description-counter');
+    const keywordsCounter = document.getElementById('keywords-counter');
+    
+    const previewTitle = document.getElementById('preview-title');
+    const previewDescription = document.getElementById('preview-description');
+    const htmlPreview = document.getElementById('html-preview');
+
+    // Character counters
+    function updateCounter(input, counter, maxLength) {
+        const length = input.value.length;
+        counter.textContent = length;
+        if (length > maxLength * 0.9) {
+            counter.classList.add('text-red-500');
+        } else {
+            counter.classList.remove('text-red-500');
+        }
+    }
+
+    titleInput.addEventListener('input', () => updateCounter(titleInput, titleCounter, 60));
+    descriptionInput.addEventListener('input', () => updateCounter(descriptionInput, descriptionCounter, 160));
+    keywordsInput.addEventListener('input', () => updateCounter(keywordsInput, keywordsCounter, 255));
+
+    // Preview updates
+    function updatePreview() {
+        previewTitle.textContent = titleInput.value || 'Введите заголовок';
+        previewDescription.textContent = descriptionInput.value || 'Введите описание';
+        
+        htmlPreview.textContent = `<title>${titleInput.value || 'Введите заголовок'}</title>
+<meta name="description" content="${descriptionInput.value || 'Введите описание'}">
+<meta name="keywords" content="${keywordsInput.value || 'Введите ключевые слова'}">`;
+    }
+
+    titleInput.addEventListener('input', updatePreview);
+    descriptionInput.addEventListener('input', updatePreview);
+    keywordsInput.addEventListener('input', updatePreview);
+
+    // Load SEO data
+    async function loadSeoData() {
+        try {
+            const response = await fetch(`/cms/api/seo?page=${pageSelect.value}&lang=${langSelect.value}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                titleInput.value = data.seo.title || '';
+                descriptionInput.value = data.seo.description || '';
+                keywordsInput.value = data.seo.keywords || '';
+                updatePreview();
+                updateCounter(titleInput, titleCounter, 60);
+                updateCounter(descriptionInput, descriptionCounter, 160);
+                updateCounter(keywordsInput, keywordsCounter, 255);
+            } else {
+                showStatus('error', data.message);
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки SEO данных:', error);
+            showStatus('error', 'Ошибка загрузки данных');
+        }
+    }
+
+    // Save SEO data
+    async function saveSeoData() {
+        const formData = {
+            page: pageSelect.value,
+            lang: langSelect.value,
+            seo: {
+                title: titleInput.value,
+                description: descriptionInput.value,
+                keywords: keywordsInput.value
+            }
+        };
+
+        try {
+            const response = await fetch('/cms/api/seo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showStatus('success', 'SEO данные успешно сохранены');
+            } else {
+                showStatus('error', data.message);
+            }
+        } catch (error) {
+            console.error('Ошибка сохранения SEO данных:', error);
+            showStatus('error', 'Ошибка сохранения данных');
+        }
+    }
+
+    // Status messages
+    function showStatus(type, message) {
+        statusMessage.className = `mt-4 p-4 rounded-md ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+        statusMessage.textContent = message;
+        statusMessage.classList.remove('hidden');
+        
+        setTimeout(() => {
+            statusMessage.classList.add('hidden');
+        }, 5000);
+    }
+
+    // Event listeners
+    pageSelect.addEventListener('change', loadSeoData);
+    langSelect.addEventListener('change', loadSeoData);
+    
+    seoForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        saveBtn.disabled = true;
+        document.getElementById('save-text').classList.add('hidden');
+        document.getElementById('saving-text').classList.remove('hidden');
+        
+        await saveSeoData();
+        
+        saveBtn.disabled = false;
+        document.getElementById('save-text').classList.remove('hidden');
+        document.getElementById('saving-text').classList.add('hidden');
+    });
+
+    // Load initial data
+    loadSeoData();
+});
+</script>
 {% endblock %}

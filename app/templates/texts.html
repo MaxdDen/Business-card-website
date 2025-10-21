@@ -30,17 +30,194 @@
                 <h2 class="text-lg font-medium text-gray-900 dark:text-white">Редактирование текстов</h2>
             </div>
             <div class="p-6">
-                <div class="text-center py-12">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">Раздел в разработке</h3>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        Функционал редактирования текстов будет реализован на следующем этапе.
-                    </p>
+                <!-- Фильтры -->
+                <div class="mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="page-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Страница
+                            </label>
+                            <select id="page-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                                <option value="home" selected>Главная</option>
+                                <option value="about">О компании</option>
+                                <option value="catalog">Каталог</option>
+                                <option value="contacts">Контакты</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="lang-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Язык
+                            </label>
+                            <select id="lang-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                                <option value="ru">Русский</option>
+                                <option value="en" selected>English</option>
+                                <option value="ua">Українська</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Форма редактирования -->
+                <form id="texts-form" class="space-y-6">
+                    <div>
+                        <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Заголовок
+                        </label>
+                        <input type="text" id="title" name="title" 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                               placeholder="Введите заголовок">
+                    </div>
+
+                    <div>
+                        <label for="subtitle" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Подзаголовок
+                        </label>
+                        <input type="text" id="subtitle" name="subtitle" 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                               placeholder="Введите подзаголовок">
+                    </div>
+
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Описание
+                        </label>
+                        <textarea id="description" name="description" rows="4" 
+                                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                  placeholder="Введите описание"></textarea>
+                    </div>
+
+                    <div>
+                        <label for="cta_text" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Текст кнопки CTA
+                        </label>
+                        <input type="text" id="cta_text" name="cta_text" 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                               placeholder="Введите текст кнопки">
+                    </div>
+
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Телефон
+                        </label>
+                        <input type="text" id="phone" name="phone" 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                               placeholder="Введите номер телефона">
+                    </div>
+
+                    <div>
+                        <label for="address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Адрес
+                        </label>
+                        <textarea id="address" name="address" rows="2" 
+                                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                  placeholder="Введите адрес"></textarea>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button type="submit" 
+                                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            Сохранить изменения
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Уведомления -->
+                <div id="notification" class="hidden mt-4 p-4 rounded-md"></div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const pageSelect = document.getElementById('page-select');
+    const langSelect = document.getElementById('lang-select');
+    const form = document.getElementById('texts-form');
+    const notification = document.getElementById('notification');
+
+    // Загрузить тексты при изменении страницы или языка
+    function loadTexts() {
+        const page = pageSelect.value;
+        const lang = langSelect.value;
+        
+        fetch(`/cms/api/texts?page=${page}&lang=${lang}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Заполняем форму данными
+                    document.getElementById('title').value = data.texts.title || '';
+                    document.getElementById('subtitle').value = data.texts.subtitle || '';
+                    document.getElementById('description').value = data.texts.description || '';
+                    document.getElementById('cta_text').value = data.texts.cta_text || '';
+                    document.getElementById('phone').value = data.texts.phone || '';
+                    document.getElementById('address').value = data.texts.address || '';
+                } else {
+                    showNotification('Ошибка загрузки текстов: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                showNotification('Ошибка загрузки текстов', 'error');
+            });
+    }
+
+
+    // Сохранить тексты
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const page = pageSelect.value;
+        const lang = langSelect.value;
+        const formData = new FormData(form);
+        const texts = {};
+        
+        // Собираем данные формы
+        for (let [key, value] of formData.entries()) {
+            texts[key] = value;
+        }
+
+        fetch('/cms/api/texts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                page: page,
+                lang: lang,
+                texts: texts
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Тексты успешно сохранены', 'success');
+            } else {
+                showNotification('Ошибка сохранения: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            showNotification('Ошибка сохранения текстов', 'error');
+        });
+    });
+
+    // Загрузить тексты при изменении страницы или языка
+    pageSelect.addEventListener('change', loadTexts);
+    langSelect.addEventListener('change', loadTexts);
+
+    // Показать уведомление
+    function showNotification(message, type) {
+        notification.className = `mt-4 p-4 rounded-md ${type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`;
+        notification.textContent = message;
+        notification.classList.remove('hidden');
+        
+        setTimeout(() => {
+            notification.classList.add('hidden');
+        }, 5000);
+    }
+
+    // Загрузить тексты при загрузке страницы
+    loadTexts();
+});
+</script>
 {% endblock %}

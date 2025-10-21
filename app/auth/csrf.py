@@ -24,6 +24,13 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         token = request.cookies.get(self.cookie_name)
         if not token:
             token = secrets.token_urlsafe(32)
+        
+        # Пропускаем CSRF проверку для API endpoints
+        if request.url.path.startswith("/cms/api/"):
+            response = await call_next(request)
+            response.set_cookie(self.cookie_name, token, httponly=False, samesite="lax")
+            return response
+            
         if not _is_safe_method(request.method):
             header = request.headers.get(CSRF_HEADER_NAME)
             if not header or header != token:

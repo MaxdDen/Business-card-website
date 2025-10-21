@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS images (
   path TEXT NOT NULL,
   original_path TEXT NOT NULL,
   type TEXT NOT NULL CHECK(type IN ('logo','slider','background','favicon')),
-  "order" INTEGER NOT NULL DEFAULT 0
+  "order" INTEGER NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_images_type ON images(type);
 
