@@ -29,6 +29,30 @@ AVAILABLE_TESTS = {
     "seo": {
         "file": "test_seo_management.py",
         "description": "Тест SEO функциональности"
+    },
+    "users": {
+        "file": "test_users_management.py",
+        "description": "Тест управления пользователями"
+    },
+    "public": {
+        "file": "test_public_site.py",
+        "description": "Тест публичного сайта"
+    },
+    "multilang": {
+        "file": "test_multilang.py",
+        "description": "Тест мультиязычности"
+    },
+    "language_persistence": {
+        "file": "test_cms_language_persistence.py",
+        "description": "Тест сохранения языка в CMS"
+    },
+    "language_simple": {
+        "file": "test_cms_language_simple.py",
+        "description": "Упрощенный тест языковых роутов CMS"
+    },
+    "caching": {
+        "file": "test_caching_system.py",
+        "description": "Тест системы кэширования"
     }
 }
 

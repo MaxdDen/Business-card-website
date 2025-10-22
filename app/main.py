@@ -8,6 +8,8 @@ from app.auth.csrf import CSRFMiddleware
 from app.auth.middleware import AuthRedirectMiddleware
 from app.auth.routes import router as auth_router
 from app.cms.routes import router as cms_router
+from app.site.routes import router as site_router
+from app.site.middleware import LanguageMiddleware
 from dotenv import load_dotenv
 from app.database.db import ensure_database_initialized, smoke_test, ensure_admin_user_exists
 
@@ -28,8 +30,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Business Card CMS", lifespan=lifespan)
 app.add_middleware(CSRFMiddleware)
 app.add_middleware(AuthRedirectMiddleware)
+app.add_middleware(LanguageMiddleware)
 app.include_router(auth_router)
 app.include_router(cms_router)
+app.include_router(site_router)
 
 # Обработка 401 ошибок делегируется middleware
 
@@ -43,6 +47,3 @@ async def healthcheck() -> dict:
     return {"status": "ok"}
 
 
-@app.get("/")
-async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})

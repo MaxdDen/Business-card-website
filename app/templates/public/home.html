@@ -1,0 +1,122 @@
+{% extends "public/base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <!-- Background Image -->
+    {% if background %}
+    <div class="absolute inset-0 z-0">
+        <img src="/{{ background.path }}" 
+             alt="Background" 
+             class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+    </div>
+    {% endif %}
+    
+    <!-- Content -->
+    <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 class="text-4xl md:text-6xl font-bold text-white mb-6">
+            {{ texts.title or 'Добро пожаловать' }}
+        </h1>
+        
+        {% if texts.subtitle %}
+        <h2 class="text-xl md:text-2xl text-gray-200 mb-8">
+            {{ texts.subtitle }}
+        </h2>
+        {% endif %}
+        
+        {% if texts.description %}
+        <p class="text-lg text-gray-300 mb-10 max-w-2xl mx-auto">
+            {{ texts.description }}
+        </p>
+        {% endif %}
+        
+        {% if texts.cta_text %}
+        <a href="/{{ lang }}/contacts" 
+           class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-300">
+            {{ texts.cta_text }}
+        </a>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Slider Section -->
+{% if slider_images %}
+<section class="py-16 bg-white dark:bg-gray-800">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl font-bold text-center mb-12 text-gray-900 dark:text-white">
+            {% if lang == 'ru' %}Наши работы{% elif lang == 'en' %}Our Works{% else %}Наші роботи{% endif %}
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for image in slider_images %}
+            <div class="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <img src="/{{ image.path }}" 
+                     alt="Slider image {{ loop.index }}"
+                     class="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300">
+                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300"></div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Features Section -->
+<section class="py-16 bg-gray-50 dark:bg-gray-900">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                {% if lang == 'ru' %}Почему выбирают нас{% elif lang == 'en' %}Why Choose Us{% else %}Чому обирають нас{% endif %}
+            </h2>
+            <p class="text-lg text-gray-600 dark:text-gray-400">
+                {% if lang == 'ru' %}Мы предлагаем качественные решения для вашего бизнеса{% elif lang == 'en' %}We offer quality solutions for your business{% else %}Ми пропонуємо якісні рішення для вашого бізнесу{% endif %}
+            </p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+                <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    {% if lang == 'ru' %}Быстро{% elif lang == 'en' %}Fast{% else %}Швидко{% endif %}
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400">
+                    {% if lang == 'ru' %}Быстрая доставка и обработка заказов{% elif lang == 'en' %}Fast delivery and order processing{% else %}Швидка доставка та обробка замовлень{% endif %}
+                </p>
+            </div>
+            
+            <div class="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+                <div class="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    {% if lang == 'ru' %}Качественно{% elif lang == 'en' %}Quality{% else %}Якісно{% endif %}
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400">
+                    {% if lang == 'ru' %}Только качественные товары и услуги{% elif lang == 'en' %}Only quality products and services{% else %}Тільки якісні товари та послуги{% endif %}
+                </p>
+            </div>
+            
+            <div class="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+                <div class="w-16 h-16 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    {% if lang == 'ru' %}Надежно{% elif lang == 'en' %}Reliable{% else %}Надійно{% endif %}
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400">
+                    {% if lang == 'ru' %}Надежный партнер для вашего бизнеса{% elif lang == 'en' %}Reliable partner for your business{% else %}Надійний партнер для вашого бізнесу{% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

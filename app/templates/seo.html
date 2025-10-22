@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}SEO-настройки - CMS{% endblock %}
+{% block title %}{{ t.title or 'SEO Settings - CMS' }}{% endblock %}
 
 {% block content %}
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -9,14 +9,29 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center py-6">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">SEO-настройки</h1>
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ t.title or 'SEO Settings' }}</h1>
                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        Мета-теги и оптимизация для поисковых систем
+                        {{ t.subtitle or 'Meta tags and search engine optimization' }}
                     </p>
                 </div>
                 <div class="flex items-center space-x-4">
+                    <!-- Language Switcher -->
+                    <div class="flex items-center space-x-2">
+                        {% for supported_lang in supported_languages %}
+                        <a href="{{ language_urls[supported_lang] }}" 
+                           class="px-3 py-1 text-sm rounded-md transition-colors
+                                  {% if supported_lang == lang %}
+                                  bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                                  {% else %}
+                                  text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200
+                                  {% endif %}">
+                            {{ supported_lang|upper }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    
                     <a href="/cms" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                        ← Назад к Dashboard
+                        {{ t.back_to_dashboard or '← Back to Dashboard' }}
                     </a>
                 </div>
             </div>
@@ -29,30 +44,30 @@
             <!-- SEO Form -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
                 <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <h2 class="text-lg font-medium text-gray-900 dark:text-white">Настройки SEO</h2>
+                    <h2 class="text-lg font-medium text-gray-900 dark:text-white">{{ t.seo_settings or 'SEO Settings' }}</h2>
                 </div>
                 <div class="p-6">
                     <!-- Page and Language Selection -->
                     <div class="grid grid-cols-2 gap-4 mb-6">
                         <div>
                             <label for="page-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Страница
+                                {{ t.page or 'Page' }}
                             </label>
                             <select id="page-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
-                                <option value="home">Главная</option>
-                                <option value="about">О компании</option>
-                                <option value="catalog">Каталог</option>
-                                <option value="contacts">Контакты</option>
+                                <option value="home">{{ t.home or 'Home' }}</option>
+                                <option value="about">{{ t.about or 'About' }}</option>
+                                <option value="catalog">{{ t.catalog or 'Catalog' }}</option>
+                                <option value="contacts">{{ t.contacts or 'Contacts' }}</option>
                             </select>
                         </div>
                         <div>
                             <label for="lang-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Язык
+                                {{ t.language or 'Language' }}
                             </label>
                             <select id="lang-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
-                                <option value="ru">Русский</option>
-                                <option value="en">English</option>
-                                <option value="ua">Українська</option>
+                                <option value="ru">{{ t.russian or 'Russian' }}</option>
+                                <option value="en">{{ t.english or 'English' }}</option>
+                                <option value="ua">{{ t.ukrainian or 'Ukrainian' }}</option>
                             </select>
                         </div>
                     </div>
@@ -63,7 +78,7 @@
                             <!-- Title -->
                             <div>
                                 <label for="seo-title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Title <span class="text-red-500">*</span>
+                                    {{ t.title or 'Title' }} <span class="text-red-500">*</span>
                                 </label>
                                 <input 
                                     type="text" 
@@ -71,17 +86,17 @@
                                     name="title"
                                     maxlength="60"
                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                    placeholder="Заголовок страницы (до 60 символов)"
+                                    placeholder="{{ t.title_placeholder or 'Page title (up to 60 characters)' }}"
                                 >
                                 <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                    <span id="title-counter">0</span>/60 символов
+                                    <span id="title-counter">0</span>/60 {{ t.characters or 'characters' }}
                                 </div>
                             </div>
 
                             <!-- Description -->
                             <div>
                                 <label for="seo-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Description
+                                    {{ t.description or 'Description' }}
                                 </label>
                                 <textarea 
                                     id="seo-description" 
@@ -89,17 +104,17 @@
                                     rows="3"
                                     maxlength="160"
                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                    placeholder="Описание страницы (до 160 символов)"
+                                    placeholder="{{ t.description_placeholder or 'Page description (up to 160 characters)' }}"
                                 ></textarea>
                                 <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                    <span id="description-counter">0</span>/160 символов
+                                    <span id="description-counter">0</span>/160 {{ t.characters or 'characters' }}
                                 </div>
                             </div>
 
                             <!-- Keywords -->
                             <div>
                                 <label for="seo-keywords" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Keywords
+                                    {{ t.keywords or 'Keywords' }}
                                 </label>
                                 <input 
                                     type="text" 
@@ -107,10 +122,10 @@
                                     name="keywords"
                                     maxlength="255"
                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                    placeholder="Ключевые слова через запятую (до 255 символов)"
+                                    placeholder="{{ t.keywords_placeholder or 'Keywords separated by commas (up to 255 characters)' }}"
                                 >
                                 <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                    <span id="keywords-counter">0</span>/255 символов
+                                    <span id="keywords-counter">0</span>/255 {{ t.characters or 'characters' }}
                                 </div>
                             </div>
                         </div>
@@ -122,8 +137,8 @@
                                 id="save-seo-btn"
                                 class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <span id="save-text">Сохранить</span>
-                                <span id="saving-text" class="hidden">Сохранение...</span>
+                                <span id="save-text">{{ t.save or 'Save' }}</span>
+                                <span id="saving-text" class="hidden">{{ t.saving or 'Saving...' }}</span>
                             </button>
                         </div>
                     </form>
@@ -133,22 +148,22 @@
             <!-- Preview Panel -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
                 <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <h2 class="text-lg font-medium text-gray-900 dark:text-white">Предпросмотр</h2>
+                    <h2 class="text-lg font-medium text-gray-900 dark:text-white">{{ t.preview or 'Preview' }}</h2>
                 </div>
                 <div class="p-6">
                     <!-- Google Search Preview -->
                     <div class="mb-6">
-                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Как будет выглядеть в Google:</h3>
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{{ t.google_preview or 'How it will look in Google:' }}</h3>
                         <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
                             <div id="google-preview" class="space-y-2">
                                 <div class="text-blue-600 dark:text-blue-400 text-lg font-medium">
-                                    <span id="preview-title">Введите заголовок</span>
+                                    <span id="preview-title">{{ t.enter_title or 'Enter title' }}</span>
                                 </div>
                                 <div class="text-green-600 dark:text-green-400 text-sm">
                                     <span id="preview-url">example.com</span>
                                 </div>
                                 <div class="text-gray-600 dark:text-gray-300 text-sm">
-                                    <span id="preview-description">Введите описание</span>
+                                    <span id="preview-description">{{ t.enter_description or 'Enter description' }}</span>
                                 </div>
                             </div>
                         </div>
@@ -156,11 +171,11 @@
 
                     <!-- HTML Preview -->
                     <div>
-                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">HTML код:</h3>
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{{ t.html_code or 'HTML code:' }}</h3>
                         <div class="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 overflow-x-auto">
-                            <pre class="text-sm text-gray-800 dark:text-gray-200"><code id="html-preview">&lt;title&gt;Введите заголовок&lt;/title&gt;
-&lt;meta name="description" content="Введите описание"&gt;
-&lt;meta name="keywords" content="Введите ключевые слова"&gt;</code></pre>
+                            <pre class="text-sm text-gray-800 dark:text-gray-200"><code id="html-preview">&lt;title&gt;{{ t.enter_title or 'Enter title' }}&lt;/title&gt;
+&lt;meta name="description" content="{{ t.enter_description or 'Enter description' }}"&gt;
+&lt;meta name="keywords" content="{{ t.enter_keywords or 'Enter keywords' }}"&gt;</code></pre>
                         </div>
                     </div>
                 </div>
@@ -209,12 +224,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Preview updates
     function updatePreview() {
-        previewTitle.textContent = titleInput.value || 'Введите заголовок';
-        previewDescription.textContent = descriptionInput.value || 'Введите описание';
+        previewTitle.textContent = titleInput.value || '{{ t.enter_title or "Enter title" }}';
+        previewDescription.textContent = descriptionInput.value || '{{ t.enter_description or "Enter description" }}';
         
-        htmlPreview.textContent = `<title>${titleInput.value || 'Введите заголовок'}</title>
-<meta name="description" content="${descriptionInput.value || 'Введите описание'}">
-<meta name="keywords" content="${keywordsInput.value || 'Введите ключевые слова'}">`;
+        htmlPreview.textContent = `<title>${titleInput.value || '{{ t.enter_title or "Enter title" }}'}</title>
+<meta name="description" content="${descriptionInput.value || '{{ t.enter_description or "Enter description" }}'}">
+<meta name="keywords" content="${keywordsInput.value || '{{ t.enter_keywords or "Enter keywords" }}'}">`;
     }
 
     titleInput.addEventListener('input', updatePreview);
@@ -240,7 +255,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('Ошибка загрузки SEO данных:', error);
-            showStatus('error', 'Ошибка загрузки данных');
+                showStatus('error', '{{ t.load_error or "Load error" }}');
         }
     }
 
@@ -268,13 +283,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             
             if (data.success) {
-                showStatus('success', 'SEO данные успешно сохранены');
+                showStatus('success', '{{ t.save_success or "SEO data saved successfully" }}');
             } else {
                 showStatus('error', data.message);
             }
         } catch (error) {
             console.error('Ошибка сохранения SEO данных:', error);
-            showStatus('error', 'Ошибка сохранения данных');
+            showStatus('error', '{{ t.save_error or "Save error" }}');
         }
     }
 

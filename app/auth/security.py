@@ -58,6 +58,17 @@ def verify_password(plain_password: str, password_hash: str) -> bool:
             plain_password = password_bytes[:72].decode('utf-8', errors='ignore')
             logger.info(f"Password truncated from {original_length} to {len(plain_password.encode('utf-8'))} bytes")
         
+        # Сначала пробуем прямой bcrypt (для новых хэшей)
+        if password_hash.startswith('$2b$') or password_hash.startswith('$2a$') or password_hash.startswith('$2y$'):
+            try:
+                import bcrypt
+                result = bcrypt.checkpw(plain_password.encode('utf-8'), password_hash.encode('utf-8'))
+                logger.info(f"Direct bcrypt verification result: {result}")
+                return result
+            except Exception as bcrypt_error:
+                logger.warning(f"Direct bcrypt verification failed: {bcrypt_error}")
+        
+        # Fallback на passlib
         logger.info(f"Verifying password against hash: {password_hash[:20]}...")
         result = _pwd_context.verify(plain_password, password_hash)
         logger.info(f"Password verification result: {result}")

@@ -1,0 +1,106 @@
+{% extends "public/base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="bg-gradient-to-r from-green-600 to-blue-600 text-white py-20">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-6">
+            {{ texts.title or 'Каталог товаров' }}
+        </h1>
+        {% if texts.subtitle %}
+        <p class="text-xl text-green-100">
+            {{ texts.subtitle }}
+        </p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Content Section -->
+<section class="py-16 bg-white dark:bg-gray-800">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {% if texts.description %}
+        <div class="text-center mb-12">
+            <p class="text-lg text-gray-700 dark:text-gray-300 max-w-3xl mx-auto">
+                {{ texts.description }}
+            </p>
+        </div>
+        {% endif %}
+        
+        <!-- Categories -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                <div class="h-48 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                    <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <div class="p-6">
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                        {% if lang == 'ru' %}Электроника{% elif lang == 'en' %}Electronics{% else %}Електроніка{% endif %}
+                    </h3>
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">
+                        {% if lang == 'ru' %}Современные электронные устройства{% elif lang == 'en' %}Modern electronic devices{% else %}Сучасні електронні пристрої{% endif %}
+                    </p>
+                    <a href="#" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
+                        {% if lang == 'ru' %}Подробнее{% elif lang == 'en' %}Learn More{% else %}Детальніше{% endif %} →
+                    </a>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                <div class="h-48 bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
+                    <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <div class="p-6">
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                        {% if lang == 'ru' %}Компьютеры{% elif lang == 'en' %}Computers{% else %}Комп'ютери{% endif %}
+                    </h3>
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">
+                        {% if lang == 'ru' %}Персональные компьютеры и комплектующие{% elif lang == 'en' %}Personal computers and components{% else %}Персональні комп'ютери та комплектуючі{% endif %}
+                    </p>
+                    <a href="#" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
+                        {% if lang == 'ru' %}Подробнее{% elif lang == 'en' %}Learn More{% else %}Детальніше{% endif %} →
+                    </a>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                <div class="h-48 bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
+                    <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                    </svg>
+                </div>
+                <div class="p-6">
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                        {% if lang == 'ru' %}Аксессуары{% elif lang == 'en' %}Accessories{% else %}Аксесуари{% endif %}
+                    </h3>
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">
+                        {% if lang == 'ru' %}Полезные аксессуары для техники{% elif lang == 'en' %}Useful accessories for technology{% else %}Корисні аксесуари для техніки{% endif %}
+                    </p>
+                    <a href="#" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
+                        {% if lang == 'ru' %}Подробнее{% elif lang == 'en' %}Learn More{% else %}Детальніше{% endif %} →
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Call to Action -->
+        <div class="text-center mt-16">
+            <div class="bg-blue-50 dark:bg-blue-900 rounded-lg p-8">
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                    {% if lang == 'ru' %}Нужна консультация?{% elif lang == 'en' %}Need consultation?{% else %}Потрібна консультація?{% endif %}
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-6">
+                    {% if lang == 'ru' %}Наши специалисты помогут подобрать оптимальное решение{% elif lang == 'en' %}Our specialists will help you choose the optimal solution{% else %}Наші спеціалісти допоможуть підібрати оптимальне рішення{% endif %}
+                </p>
+                <a href="/{{ lang }}/contacts" 
+                   class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-300">
+                    {% if lang == 'ru' %}Связаться с нами{% elif lang == 'en' %}Contact Us{% else %}Зв'язатися з нами{% endif %}
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

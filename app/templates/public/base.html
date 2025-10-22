@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="{{ lang or 'ru' }}" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO Meta Tags -->
+    <title>{% if seo and seo.title %}{{ seo.title }}{% else %}{{ texts.title or 'Business Card' }}{% endif %}</title>
+    <meta name="description" content="{% if seo and seo.description %}{{ seo.description }}{% else %}{{ texts.description or '' }}{% endif %}">
+    {% if seo and seo.keywords %}<meta name="keywords" content="{{ seo.keywords }}">{% endif %}
+    
+    <!-- Favicon -->
+    {% if favicon %}
+    <link rel="icon" type="image/x-icon" href="/{{ favicon.path }}">
+    {% endif %}
+    
+    <!-- Tailwind CSS -->
+    <link href="/static/css/output.css" rel="stylesheet">
+    
+    <!-- Additional head content -->
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
+    <!-- Header -->
+    <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    {% if logo %}
+                    <img src="/{{ logo.path }}" alt="Logo" class="h-8 w-auto">
+                    {% endif %}
+                    <span class="ml-2 text-xl font-bold text-gray-900 dark:text-white">
+                        {{ texts.title or 'Business Card' }}
+                    </span>
+                </div>
+                
+                <!-- Navigation -->
+                <nav class="hidden md:flex space-x-8">
+                    <a href="/{{ lang }}" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                        {% if lang == 'ru' %}Главная{% elif lang == 'en' %}Home{% else %}Головна{% endif %}
+                    </a>
+                    <a href="/{{ lang }}/about" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                        {% if lang == 'ru' %}О компании{% elif lang == 'en' %}About{% else %}Про компанію{% endif %}
+                    </a>
+                    <a href="/{{ lang }}/catalog" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                        {% if lang == 'ru' %}Каталог{% elif lang == 'en' %}Catalog{% else %}Каталог{% endif %}
+                    </a>
+                    <a href="/{{ lang }}/contacts" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                        {% if lang == 'ru' %}Контакты{% elif lang == 'en' %}Contacts{% else %}Контакти{% endif %}
+                    </a>
+                </nav>
+                
+                <!-- Language Switcher -->
+                <div class="flex items-center space-x-2">
+                    {% for supported_lang in supported_languages %}
+                    <a href="{{ language_urls[supported_lang] }}"
+                       class="px-2 py-1 text-sm rounded {% if supported_lang == lang %}bg-blue-600 text-white{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %} transition-colors">
+                        {{ supported_lang.upper() }}
+                    </a>
+                    {% endfor %}
+                    
+                    <!-- Theme Toggle -->
+                    <button onclick="toggleTheme()" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                        <svg class="w-5 h-5 dark:hidden" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
+                        </svg>
+                        <svg class="w-5 h-5 hidden dark:block" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-gray-800 dark:bg-gray-900 text-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="text-center">
+                <p>&copy; 2024 Business Card. {% if lang == 'ru' %}Все права защищены.{% elif lang == 'en' %}All rights reserved.{% else %}Всі права захищені.{% endif %}</p>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- JavaScript -->
+    <script>
+        // Theme toggle functionality
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+        
+        // Load saved theme
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

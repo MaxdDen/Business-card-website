@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - CMS{% endblock %}
+{% block title %}{{ t.title or 'Dashboard - CMS' }}{% endblock %}
 
 {% block content %}
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -9,17 +9,43 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center py-6">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">CMS Dashboard</h1>
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                        {{ t.title or 'CMS Dashboard' }}
+                    </h1>
                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        Добро пожаловать, {{ user_email }}!
+                        {{ (t.welcome or 'Welcome, {email}!').replace('{email}', user_email) }}
                     </p>
                 </div>
                 <div class="flex items-center space-x-4">
+                    <!-- Language Switcher -->
+                    <div class="flex items-center space-x-2">
+                        <!-- Debug info -->
+                        <div class="text-xs text-red-600 bg-red-100 p-4 mb-4 border-2 border-red-500">
+                            <strong>🚨 DEBUG INFO 🚨</strong><br>
+                            lang={{ lang }}<br>
+                            supported_languages={{ supported_languages }}<br>
+                            language_urls={{ language_urls }}<br>
+                            language_urls type={{ language_urls.__class__.__name__ }}<br>
+                            language_urls length={{ language_urls|length if language_urls else 'None' }}<br>
+                            <strong>URLs:</strong><br>
+                            {% for lang_key, url in language_urls.items() %}
+                            {{ lang_key }}: {{ url }}<br>
+                            {% endfor %}
+                        </div>
+                        {% for supported_lang in supported_languages %}
+                        <a href="{{ language_urls[supported_lang] }}"
+                           class="px-2 py-1 text-sm rounded {% if supported_lang == lang %}bg-blue-600 text-white{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %} transition-colors"
+                           title="{{ language_urls[supported_lang] }}">
+                            {{ supported_lang.upper() }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                         {{ user_role|title }}
                     </span>
                     <a href="/logout" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                        Выйти
+                        {{ t.logout or 'Logout' }}
                     </a>
                 </div>
             </div>
@@ -41,7 +67,9 @@
                         </div>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Изображения</p>
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            {{ t.images or 'Images' }}
+                        </p>
                         <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ stats.images_count }}</p>
                     </div>
                 </div>
@@ -58,7 +86,9 @@
                         </div>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Языки</p>
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            {{ t.languages or 'Languages' }}
+                        </p>
                         <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ stats.languages_count }}</p>
                     </div>
                 </div>
@@ -75,7 +105,9 @@
                         </div>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Тексты</p>
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            {{ t.texts or 'Texts' }}
+                        </p>
                         <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ stats.texts_count }}</p>
                     </div>
                 </div>
@@ -92,7 +124,9 @@
                         </div>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Пользователи</p>
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            {{ t.users or 'Users' }}
+                        </p>
                         <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ stats.users_count }}</p>
                     </div>
                 </div>
@@ -102,7 +136,9 @@
         <!-- Quick Actions -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 class="text-lg font-medium text-gray-900 dark:text-white">Быстрые действия</h2>
+                <h2 class="text-lg font-medium text-gray-900 dark:text-white">
+                    {{ t.quick_actions or 'Quick Actions' }}
+                </h2>
             </div>
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -117,8 +153,12 @@
                                 </div>
                             </div>
                             <div class="ml-4">
-                                <h3 class="text-sm font-medium text-gray-900 dark:text-white">Редактировать тексты</h3>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">Управление контентом</p>
+                                <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                                    {{ t.edit_texts or 'Edit Texts' }}
+                                </h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    {{ t.content_management or 'Content management' }}
+                                </p>
                             </div>
                         </div>
                     </a>
@@ -134,8 +174,12 @@
                                 </div>
                             </div>
                             <div class="ml-4">
-                                <h3 class="text-sm font-medium text-gray-900 dark:text-white">Изображения</h3>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">Загрузка и управление</p>
+                                <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                                    {{ t.images or 'Images' }}
+                                </h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    {{ t.upload_management or 'Upload and management' }}
+                                </p>
                             </div>
                         </div>
                     </a>
@@ -151,8 +195,12 @@
                                 </div>
                             </div>
                             <div class="ml-4">
-                                <h3 class="text-sm font-medium text-gray-900 dark:text-white">SEO-настройки</h3>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">Мета-теги и оптимизация</p>
+                                <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                                    {{ t.seo_settings or 'SEO Settings' }}
+                                </h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    {{ t.meta_optimization or 'Meta tags and optimization' }}
+                                </p>
                             </div>
                         </div>
                     </a>
@@ -169,8 +217,12 @@
                                 </div>
                             </div>
                             <div class="ml-4">
-                                <h3 class="text-sm font-medium text-gray-900 dark:text-white">Пользователи</h3>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">Управление доступом</p>
+                                <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                                    {{ t.users or 'Users' }}
+                                </h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    {{ t.access_management or 'Access management' }}
+                                </p>
                             </div>
                         </div>
                     </a>

@@ -1,0 +1,94 @@
+{% extends "public/base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-6">
+            {{ texts.title or 'О компании' }}
+        </h1>
+        {% if texts.subtitle %}
+        <p class="text-xl text-blue-100">
+            {{ texts.subtitle }}
+        </p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Content Section -->
+<section class="py-16 bg-white dark:bg-gray-800">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {% if texts.description %}
+        <div class="prose prose-lg max-w-none dark:prose-invert">
+            <p class="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+                {{ texts.description }}
+            </p>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <p class="text-gray-500 dark:text-gray-400">
+                {% if lang == 'ru' %}Информация о компании будет добавлена в ближайшее время.{% elif lang == 'en' %}Company information will be added soon.{% else %}Інформація про компанію буде додана найближчим часом.{% endif %}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Team Section -->
+<section class="py-16 bg-gray-50 dark:bg-gray-900">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                {% if lang == 'ru' %}Наша команда{% elif lang == 'en' %}Our Team{% else %}Наша команда{% endif %}
+            </h2>
+            <p class="text-lg text-gray-600 dark:text-gray-400">
+                {% if lang == 'ru' %}Профессионалы своего дела{% elif lang == 'en' %}Professionals in their field{% else %}Професіонали своєї справи{% endif %}
+            </p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="text-center">
+                <div class="w-32 h-32 bg-gray-300 dark:bg-gray-700 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <svg class="w-16 h-16 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    {% if lang == 'ru' %}Руководитель{% elif lang == 'en' %}Manager{% else %}Керівник{% endif %}
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400">
+                    {% if lang == 'ru' %}Опыт работы более 10 лет{% elif lang == 'en' %}Over 10 years of experience{% else %}Досвід роботи понад 10 років{% endif %}
+                </p>
+            </div>
+            
+            <div class="text-center">
+                <div class="w-32 h-32 bg-gray-300 dark:bg-gray-700 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <svg class="w-16 h-16 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    {% if lang == 'ru' %}Специалист{% elif lang == 'en' %}Specialist{% else %}Спеціаліст{% endif %}
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400">
+                    {% if lang == 'ru' %}Высококвалифицированный персонал{% elif lang == 'en' %}Highly qualified staff{% else %}Висококваліфікований персонал{% endif %}
+                </p>
+            </div>
+            
+            <div class="text-center">
+                <div class="w-32 h-32 bg-gray-300 dark:bg-gray-700 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <svg class="w-16 h-16 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    {% if lang == 'ru' %}Консультант{% elif lang == 'en' %}Consultant{% else %}Консультант{% endif %}
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400">
+                    {% if lang == 'ru' %}Индивидуальный подход к каждому клиенту{% elif lang == 'en' %}Individual approach to each client{% else %}Індивідуальний підхід до кожного клієнта{% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

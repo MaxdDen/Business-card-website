@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, UploadFile, File, Form
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from app.auth.security import get_current_user
 from app.database.db import query_one, query_all, execute
-from app.utils.cache import text_cache, image_cache
+from app.utils.cache import text_cache, image_cache, invalidate_content_caches
+from app.site.middleware import get_language_from_request, get_supported_languages_from_request, get_language_urls_from_request
+from app.site.config import get_default_language
+from app.site.routes import get_text
 from app.utils.images import (
     validate_image_file, optimize_image, save_original_image, 
     generate_unique_filename, get_image_info
@@ -23,6 +26,33 @@ logger = logging.getLogger(__name__)
 def get_current_user_dependency(request: Request) -> Dict[str, Any]:
     """Зависимость для получения текущего пользователя"""
     return get_current_user(request)
+
+
+def safe_hash_password(password: str) -> str:
+    """
+    Безопасное хэширование пароля с учетом ограничений bcrypt
+    
+    Args:
+        password: Пароль для хэширования
+        
+    Returns:
+        Хэшированный пароль
+        
+    Raises:
+        Exception: Если не удается хэшировать пароль
+    """
+    import bcrypt
+    
+    # Обрезаем пароль до 72 байтов для совместимости с bcrypt
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        password_bytes = password_bytes[:72]
+    
+    # Генерируем соль и хэшируем пароль
+    salt = bcrypt.gensalt()
+    password_hash = bcrypt.hashpw(password_bytes, salt)
+    
+    return password_hash.decode('utf-8')
 
 
 def get_dashboard_stats() -> Dict[str, Any]:
@@ -60,6 +90,98 @@ def get_dashboard_stats() -> Dict[str, Any]:
         }
 
 
+def get_dashboard_translations(lang: str) -> Dict[str, str]:
+    """Получить переводы для Dashboard"""
+    translations = {}
+    
+    # Список ключей переводов для Dashboard
+    translation_keys = [
+        'title', 'welcome', 'logout', 'images', 'languages', 'texts', 'users',
+        'quick_actions', 'edit_texts', 'content_management', 'upload_management',
+        'seo_settings', 'meta_optimization', 'access_management'
+    ]
+    
+    for key in translation_keys:
+        translations[key] = get_text('dashboard', key, lang)
+    
+    return translations
+
+
+def get_cms_texts_translations(lang: str) -> Dict[str, str]:
+    """Получить переводы для CMS Texts Editor"""
+    translations = {}
+    
+    translation_keys = [
+        'title', 'subtitle', 'back_to_dashboard', 'page', 'key', 'language', 'value',
+        'actions', 'edit', 'delete', 'save', 'cancel', 'add_text', 'edit_text',
+        'title_tag', 'description', 'cta_text', 'phone', 'address',
+        'home', 'about', 'catalog', 'contacts', 'russian', 'english', 'ukrainian'
+    ]
+    
+    for key in translation_keys:
+        translations[key] = get_text('cms_texts', key, lang)
+    
+    return translations
+
+
+def get_cms_images_translations(lang: str) -> Dict[str, str]:
+    """Получить переводы для CMS Images Manager"""
+    translations = {}
+    
+    translation_keys = [
+        'title', 'subtitle', 'back_to_dashboard', 'upload_image', 'image_type',
+        'logo', 'slider', 'background', 'favicon', 'order', 'upload',
+        'uploaded_images', 'name', 'type', 'size', 'date', 'actions',
+        'view', 'download', 'delete', 'upload_images', 'select_type', 'image_file',
+        'uploading', 'no_images', 'drag_to_reorder', 'unknown', 'file_too_large',
+        'unsupported_format', 'load_error', 'select_file_and_type', 'upload_success', 
+        'upload_error', 'confirm_delete', 'delete_success', 'delete_error', 'close'
+    ]
+    
+    for key in translation_keys:
+        translations[key] = get_text('cms_images', key, lang)
+    
+    return translations
+
+
+def get_cms_seo_translations(lang: str) -> Dict[str, str]:
+    """Получить переводы для CMS SEO Manager"""
+    translations = {}
+    
+    translation_keys = [
+        'title', 'subtitle', 'back_to_dashboard', 'page', 'language',
+        'title_tag', 'description', 'keywords', 'save', 'cancel',
+        'add_seo', 'edit_seo', 'seo_settings', 'home', 'about', 'catalog', 'contacts', 
+        'russian', 'english', 'ukrainian', 'title_placeholder', 'description_placeholder', 
+        'keywords_placeholder', 'characters', 'saving', 'preview', 'google_preview', 
+        'enter_title', 'enter_description', 'enter_keywords', 'html_code', 'load_error', 
+        'save_success', 'save_error'
+    ]
+    
+    for key in translation_keys:
+        translations[key] = get_text('cms_seo', key, lang)
+    
+    return translations
+
+
+def get_cms_users_translations(lang: str) -> Dict[str, str]:
+    """Получить переводы для CMS Users Manager"""
+    translations = {}
+    
+    translation_keys = [
+        'title', 'subtitle', 'back_to_dashboard', 'add_user', 'system_users',
+        'email', 'role', 'created_date', 'actions', 'password', 'cancel', 'create',
+        'reset_password', 'new_password', 'reset', 'user_created', 'create_error',
+        'password_reset', 'reset_error', 'load_error', 'no_users', 'delete',
+        'confirm_delete', 'user_deleted', 'delete_error'
+    ]
+    
+    for key in translation_keys:
+        translations[key] = get_text('cms_users', key, lang)
+    
+    return translations
+
+
 @router.get("/")
 async def dashboard(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
     """Главная панель CMS"""
@@ -67,8 +189,33 @@ async def dashboard(request: Request, current_user: Dict[str, Any] = Depends(get
         stats = get_dashboard_stats()
         
         # Получаем информацию о пользователе
-        user_email = current_user.get("email", "Пользователь")
+        user_email = current_user.get("email", "User")
         user_role = current_user.get("role", "editor")
+        
+        # Получаем язык и настройки мультиязычности
+        lang = get_language_from_request(request)
+        supported_languages = get_supported_languages_from_request(request)
+        language_urls = get_language_urls_from_request(request)
+        
+        # Проверяем, что данные получены правильно
+        if not language_urls:
+            logger.error(f"Language URLs is empty or None for path: {request.url.path}")
+            # Создаем пустой словарь как fallback
+            language_urls = {}
+        if not supported_languages:
+            logger.error(f"Supported languages is empty or None for path: {request.url.path}")
+            # Создаем список по умолчанию как fallback
+            supported_languages = ["en", "ru", "ua"]
+        
+        # Отладочная информация
+        logger.info(f"Dashboard Debug - Path: {request.url.path}, Lang: {lang}")
+        logger.info(f"Dashboard Debug - Supported languages: {supported_languages}")
+        logger.info(f"Dashboard Debug - Language URLs: {language_urls}")
+        logger.info(f"Dashboard Debug - Language URLs type: {type(language_urls)}")
+        logger.info(f"Dashboard Debug - Language URLs length: {len(language_urls) if language_urls else 'None'}")
+        
+        # Получаем переводы для Dashboard
+        translations = get_dashboard_translations(lang)
         
         return templates.TemplateResponse(
             "dashboard.html",
@@ -76,7 +223,11 @@ async def dashboard(request: Request, current_user: Dict[str, Any] = Depends(get
                 "request": request,
                 "user_email": user_email,
                 "user_role": user_role,
-                "stats": stats
+                "stats": stats,
+                "lang": lang,
+                "supported_languages": supported_languages,
+                "language_urls": language_urls,
+                "t": translations  # Передаем переводы в шаблон
             }
         )
     except Exception as e:
@@ -87,11 +238,23 @@ async def dashboard(request: Request, current_user: Dict[str, Any] = Depends(get
 @router.get("/texts")
 async def texts_editor(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
     """Редактор текстов (заглушка)"""
+    # Получаем язык и настройки мультиязычности
+    lang = get_language_from_request(request)
+    supported_languages = get_supported_languages_from_request(request)
+    language_urls = get_language_urls_from_request(request)
+    
+    # Получаем переводы для CMS Texts Editor
+    translations = get_cms_texts_translations(lang)
+    
     return templates.TemplateResponse(
         "texts.html",
         {
             "request": request,
-            "user_email": current_user.get("email", "Пользователь")
+            "user_email": current_user.get("email", "Пользователь"),
+            "lang": lang,
+            "supported_languages": supported_languages,
+            "language_urls": language_urls,
+            "t": translations
         }
     )
 
@@ -99,11 +262,23 @@ async def texts_editor(request: Request, current_user: Dict[str, Any] = Depends(
 @router.get("/images")
 async def images_manager(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
     """Управление изображениями (заглушка)"""
+    # Получаем язык и настройки мультиязычности
+    lang = get_language_from_request(request)
+    supported_languages = get_supported_languages_from_request(request)
+    language_urls = get_language_urls_from_request(request)
+    
+    # Получаем переводы для CMS Images Manager
+    translations = get_cms_images_translations(lang)
+    
     return templates.TemplateResponse(
         "images.html",
         {
             "request": request,
-            "user_email": current_user.get("email", "Пользователь")
+            "user_email": current_user.get("email", "Пользователь"),
+            "lang": lang,
+            "supported_languages": supported_languages,
+            "language_urls": language_urls,
+            "t": translations
         }
     )
 
@@ -111,11 +286,23 @@ async def images_manager(request: Request, current_user: Dict[str, Any] = Depend
 @router.get("/seo")
 async def seo_manager(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
     """SEO-панель (заглушка)"""
+    # Получаем язык и настройки мультиязычности
+    lang = get_language_from_request(request)
+    supported_languages = get_supported_languages_from_request(request)
+    language_urls = get_language_urls_from_request(request)
+    
+    # Получаем переводы для CMS SEO Manager
+    translations = get_cms_seo_translations(lang)
+    
     return templates.TemplateResponse(
         "seo.html",
         {
             "request": request,
-            "user_email": current_user.get("email", "Пользователь")
+            "user_email": current_user.get("email", "Пользователь"),
+            "lang": lang,
+            "supported_languages": supported_languages,
+            "language_urls": language_urls,
+            "t": translations
         }
     )
 
@@ -127,13 +314,88 @@ async def users_manager(request: Request, current_user: Dict[str, Any] = Depends
     if user_role != "admin":
         raise HTTPException(status_code=403, detail="Доступ запрещен. Требуется роль admin")
     
+    lang = get_language_from_request(request)
+    supported_languages = get_supported_languages_from_request(request)
+    language_urls = get_language_urls_from_request(request)
+    translations = get_cms_users_translations(lang)
+    
     return templates.TemplateResponse(
         "users.html",
         {
             "request": request,
-            "user_email": current_user.get("email", "Пользователь")
+            "user_email": current_user.get("email", "Пользователь"),
+            "lang": lang,
+            "supported_languages": supported_languages,
+            "language_urls": language_urls,
+            "t": translations
         }
     )
+
+
+# Многоязычные маршруты для users
+@router.get("/ru/users")
+async def users_ru(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    return await users_manager(request, current_user)
+
+
+@router.get("/en/users")
+async def users_en(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    return await users_manager(request, current_user)
+
+
+@router.get("/ua/users")
+async def users_ua(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    return await users_manager(request, current_user)
+
+
+# Языковые алиасы для всех CMS страниц
+@router.get("/ru/")
+async def dashboard_ru(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    return await dashboard(request, current_user)
+
+@router.get("/en/")
+async def dashboard_en(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    return await dashboard(request, current_user)
+
+@router.get("/ua/")
+async def dashboard_ua(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    return await dashboard(request, current_user)
+
+@router.get("/ru/texts")
+async def texts_ru(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    return await texts_editor(request, current_user)
+
+@router.get("/en/texts")
+async def texts_en(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    return await texts_editor(request, current_user)
+
+@router.get("/ua/texts")
+async def texts_ua(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    return await texts_editor(request, current_user)
+
+@router.get("/ru/images")
+async def images_ru(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    return await images_manager(request, current_user)
+
+@router.get("/en/images")
+async def images_en(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    return await images_manager(request, current_user)
+
+@router.get("/ua/images")
+async def images_ua(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    return await images_manager(request, current_user)
+
+@router.get("/ru/seo")
+async def seo_ru(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    return await seo_manager(request, current_user)
+
+@router.get("/en/seo")
+async def seo_en(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    return await seo_manager(request, current_user)
+
+@router.get("/ua/seo")
+async def seo_ua(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    return await seo_manager(request, current_user)
 
 
 # API для работы с текстами
@@ -252,6 +514,7 @@ async def save_texts(request: Request, current_user: Dict[str, Any] = Depends(ge
         
         # Инвалидируем кэш для этой страницы и языка
         text_cache.invalidate(page, lang)
+        invalidate_content_caches(page=page, lang=lang)
         logger.debug(f"Cache invalidated for {page}:{lang}")
         
         return {
@@ -447,6 +710,8 @@ async def upload_image(
         
         # Инвалидируем кэш изображений для данного типа
         image_cache.invalidate_type(image_type)
+        # Инвалидируем файловый кэш для всех страниц (изображения могут использоваться везде)
+        invalidate_content_caches()
         
         logger.info(f"Изображение загружено: {unique_filename}, тип: {image_type}")
         
@@ -504,6 +769,8 @@ async def delete_image(
         
         # Инвалидируем кэш изображений для данного типа
         image_cache.invalidate_type(image["type"])
+        # Инвалидируем файловый кэш для всех страниц
+        invalidate_content_caches()
         
         logger.info(f"Изображение удалено: {image['name']}")
         
@@ -692,6 +959,8 @@ async def save_seo(request: Request, current_user: Dict[str, Any] = Depends(get_
                 VALUES (?, ?, ?, ?, ?)
             """, (page, lang, title, description, keywords))
         
+        # Инвалидируем кэш для этой страницы и языка
+        invalidate_content_caches(page=page, lang=lang)
         logger.info(f"SEO данные сохранены для {page}:{lang}")
         
         return {
@@ -704,3 +973,220 @@ async def save_seo(request: Request, current_user: Dict[str, Any] = Depends(get_
     except Exception as e:
         logger.error(f"Ошибка сохранения SEO данных: {e}")
         return {"success": False, "message": "Ошибка сохранения SEO данных"}
+
+
+# ==================== УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ ====================
+
+@router.get("/api/users")
+async def get_users(current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Получить список всех пользователей (только для admin)"""
+    try:
+        # Проверяем роль пользователя
+        if current_user.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Доступ запрещен")
+        
+        # Получаем список пользователей
+        users = query_all("""
+            SELECT id, email, role, created_at 
+            FROM users 
+            ORDER BY created_at DESC
+        """)
+        
+        return {
+            "success": True,
+            "users": users
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Ошибка получения списка пользователей: {e}")
+        return {"success": False, "message": "Ошибка получения списка пользователей"}
+
+
+@router.post("/api/users")
+async def create_user(
+    email: str = Form(...),
+    password: str = Form(...),
+    role: str = Form(...),
+    current_user: Dict[str, Any] = Depends(get_current_user_dependency)
+):
+    """Создать нового пользователя (только для admin)"""
+    try:
+        # Проверяем роль пользователя
+        if current_user.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Доступ запрещен")
+        
+        # Валидация данных
+        if not email or len(email) < 5:
+            return {"success": False, "message": "Некорректный email"}
+        
+        if not password or len(password) < 8:
+            return {"success": False, "message": "Пароль должен содержать минимум 8 символов"}
+        
+        if len(password.encode('utf-8')) > 72:
+            return {"success": False, "message": "Пароль не может быть длиннее 72 байтов"}
+        
+        if role not in ["admin", "editor"]:
+            return {"success": False, "message": "Некорректная роль"}
+        
+        # Проверяем, что пользователь с таким email не существует
+        existing_user = query_one("SELECT id FROM users WHERE email = ?", (email,))
+        if existing_user:
+            return {"success": False, "message": "Пользователь с таким email уже существует"}
+        
+        # Хэшируем пароль с учетом ограничений bcrypt
+        password_hash = safe_hash_password(password)
+        
+        # Создаем пользователя
+        execute("""
+            INSERT INTO users (email, password_hash, role, created_at)
+            VALUES (?, ?, ?, datetime('now'))
+        """, (email, password_hash, role))
+        
+        return {"success": True, "message": "Пользователь успешно создан"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Ошибка создания пользователя: {e}")
+        return {"success": False, "message": "Ошибка создания пользователя"}
+
+
+@router.delete("/api/users/{user_id}")
+async def delete_user(
+    user_id: int,
+    current_user: Dict[str, Any] = Depends(get_current_user_dependency)
+):
+    """Удалить пользователя (только для admin)"""
+    try:
+        # Проверяем роль пользователя
+        if current_user.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Доступ запрещен")
+        
+        # Проверяем, что пользователь существует
+        user = query_one("SELECT id, email FROM users WHERE id = ?", (user_id,))
+        if not user:
+            return {"success": False, "message": "Пользователь не найден"}
+        
+        # Нельзя удалить самого себя
+        if user_id == current_user.get("id"):
+            return {"success": False, "message": "Нельзя удалить самого себя"}
+        
+        # Удаляем пользователя
+        execute("DELETE FROM users WHERE id = ?", (user_id,))
+        
+        return {"success": True, "message": "Пользователь успешно удален"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Ошибка удаления пользователя: {e}")
+        return {"success": False, "message": "Ошибка удаления пользователя"}
+
+
+@router.post("/api/users/{user_id}/reset-password")
+async def reset_user_password(
+    user_id: int,
+    new_password: str = Form(...),
+    current_user: Dict[str, Any] = Depends(get_current_user_dependency)
+):
+    """Сбросить пароль пользователя (только для admin)"""
+    try:
+        # Проверяем роль пользователя
+        if current_user.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Доступ запрещен")
+        
+        # Валидация пароля
+        if not new_password or len(new_password) < 8:
+            return {"success": False, "message": "Пароль должен содержать минимум 8 символов"}
+        
+        if len(new_password.encode('utf-8')) > 72:
+            return {"success": False, "message": "Пароль не может быть длиннее 72 байтов"}
+        
+        # Проверяем, что пользователь существует
+        user = query_one("SELECT id, email FROM users WHERE id = ?", (user_id,))
+        if not user:
+            return {"success": False, "message": "Пользователь не найден"}
+        
+        # Хэшируем новый пароль с учетом ограничений bcrypt
+        password_hash = safe_hash_password(new_password)
+        
+        # Обновляем пароль
+        execute("UPDATE users SET password_hash = ? WHERE id = ?", (password_hash, user_id))
+        
+        return {"success": True, "message": "Пароль успешно сброшен"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Ошибка сброса пароля: {e}")
+        return {"success": False, "message": "Ошибка сброса пароля"}
+
+
+# Мультиязычные роуты для CMS
+@router.get("/ru/")
+async def dashboard_ru(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Dashboard на русском языке"""
+    # Устанавливаем русский язык в состояние запроса
+    return await dashboard(request, current_user)
+
+@router.get("/en/")
+async def dashboard_en(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Dashboard на английском языке"""
+    # Устанавливаем английский язык в состояние запроса
+    return await dashboard(request, current_user)
+
+@router.get("/ua/")
+async def dashboard_ua(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Dashboard на украинском языке"""
+    # Устанавливаем украинский язык в состояние запроса
+    return await dashboard(request, current_user)
+
+# Мультиязычные роуты для других CMS страниц
+@router.get("/ru/texts")
+async def texts_ru(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Страница редактирования текстов на русском языке"""
+    return await texts_editor(request, current_user)
+
+@router.get("/en/texts")
+async def texts_en(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Страница редактирования текстов на английском языке"""
+    return await texts_editor(request, current_user)
+
+@router.get("/ua/texts")
+async def texts_ua(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Страница редактирования текстов на украинском языке"""
+    return await texts_editor(request, current_user)
+
+# Мультиязычные роуты для Images Manager
+@router.get("/ru/images")
+async def images_ru(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Страница управления изображениями на русском языке"""
+    return await images_manager(request, current_user)
+
+@router.get("/en/images")
+async def images_en(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Страница управления изображениями на английском языке"""
+    return await images_manager(request, current_user)
+
+@router.get("/ua/images")
+async def images_ua(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Страница управления изображениями на украинском языке"""
+    return await images_manager(request, current_user)
+
+# Мультиязычные роуты для SEO Manager
+@router.get("/ru/seo")
+async def seo_ru(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Страница SEO-настроек на русском языке"""
+    return await seo_manager(request, current_user)
+
+@router.get("/en/seo")
+async def seo_en(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Страница SEO-настроек на английском языке"""
+    return await seo_manager(request, current_user)
+
+@router.get("/ua/seo")
+async def seo_ua(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Страница SEO-настроек на украинском языке"""
+    return await seo_manager(request, current_user)
