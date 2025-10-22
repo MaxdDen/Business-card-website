@@ -3,7 +3,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse, RedirectResponse
 from app.auth.security import get_current_user
 from app.database.db import query_one, query_all, execute
-from app.utils.cache import text_cache, image_cache, invalidate_content_caches
+from app.utils.cache import text_cache, image_cache
 from app.site.middleware import get_language_from_request, get_supported_languages_from_request, get_language_urls_from_request
 from app.site.config import get_default_language
 from app.site.routes import get_text
@@ -514,7 +514,6 @@ async def save_texts(request: Request, current_user: Dict[str, Any] = Depends(ge
         
         # Инвалидируем кэш для этой страницы и языка
         text_cache.invalidate(page, lang)
-        invalidate_content_caches(page=page, lang=lang)
         logger.debug(f"Cache invalidated for {page}:{lang}")
         
         return {
@@ -710,8 +709,6 @@ async def upload_image(
         
         # Инвалидируем кэш изображений для данного типа
         image_cache.invalidate_type(image_type)
-        # Инвалидируем файловый кэш для всех страниц (изображения могут использоваться везде)
-        invalidate_content_caches()
         
         logger.info(f"Изображение загружено: {unique_filename}, тип: {image_type}")
         
@@ -769,8 +766,6 @@ async def delete_image(
         
         # Инвалидируем кэш изображений для данного типа
         image_cache.invalidate_type(image["type"])
-        # Инвалидируем файловый кэш для всех страниц
-        invalidate_content_caches()
         
         logger.info(f"Изображение удалено: {image['name']}")
         
@@ -959,8 +954,6 @@ async def save_seo(request: Request, current_user: Dict[str, Any] = Depends(get_
                 VALUES (?, ?, ?, ?, ?)
             """, (page, lang, title, description, keywords))
         
-        # Инвалидируем кэш для этой страницы и языка
-        invalidate_content_caches(page=page, lang=lang)
         logger.info(f"SEO данные сохранены для {page}:{lang}")
         
         return {

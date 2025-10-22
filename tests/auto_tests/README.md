@@ -44,6 +44,16 @@
 **Что проверяет:** Сохранение языка при переходах между страницами CMS, языковые алиасы  
 **Запуск:** `python manage_tests.py language_persistence`
 
+### 9. test_security.py
+**Описание:** Тест безопасности системы (Этап 12)  
+**Что проверяет:** Security headers, безопасность cookies, валидацию файлов, защиту от SQL/XSS, rate limiting, валидацию паролей  
+**Запуск:** `python manage_tests.py security`
+
+### 10. test_build_scripts.py
+**Описание:** Тест скриптов сборки и развертывания (Этап 13)  
+**Что проверяет:** PowerShell скрипты, Makefile, NPM скрипты, README.md, файлы окружения, структуру директорий  
+**Запуск:** `python manage_tests.py build`
+
 ## Как использовать
 
 ### Запуск всех тестов

@@ -50,9 +50,13 @@ AVAILABLE_TESTS = {
         "file": "test_cms_language_simple.py",
         "description": "Упрощенный тест языковых роутов CMS"
     },
-    "caching": {
-        "file": "test_caching_system.py",
-        "description": "Тест системы кэширования"
+    "security": {
+        "file": "test_security.py",
+        "description": "Тест безопасности системы (Этап 12)"
+    },
+    "build": {
+        "file": "test_build_scripts.py",
+        "description": "Тест скриптов сборки и развертывания (Этап 13)"
     }
 }
 

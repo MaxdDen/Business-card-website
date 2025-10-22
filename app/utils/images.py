@@ -134,16 +134,25 @@ def save_original_image(file_content: bytes, original_path: str) -> bool:
 
 def generate_unique_filename(original_filename: str) -> str:
     """
-    Генерация уникального имени файла
+    Генерация уникального имени файла с очисткой от опасных символов
     
     Args:
         original_filename: оригинальное имя файла
     
     Returns:
-        Уникальное имя файла
+        Безопасное уникальное имя файла
     """
-    # Получаем расширение
-    file_ext = os.path.splitext(original_filename)[1]
+    from app.utils.validation import sanitize_filename
+    
+    # Сначала очищаем имя файла от опасных символов
+    safe_filename = sanitize_filename(original_filename)
+    
+    # Получаем расширение из очищенного имени
+    file_ext = os.path.splitext(safe_filename)[1].lower()
+    
+    # Проверяем что расширение разрешено
+    if file_ext not in ALLOWED_EXTENSIONS:
+        file_ext = '.webp'  # fallback на безопасное расширение
     
     # Генерируем уникальное имя
     unique_id = str(uuid.uuid4())

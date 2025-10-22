@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request, HTTPException
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from app.database.db import query_all, query_one
-from app.utils.cache import text_cache, image_cache, file_cache, measure_render_time
+from app.utils.cache import text_cache, image_cache
 from app.site.middleware import get_language_from_request, get_supported_languages_from_request, get_language_urls_from_request
 from typing import Optional, Dict, Any
 import os
@@ -136,43 +136,7 @@ def get_slider_images() -> list:
         logger.error(f"Ошибка получения слайдера: {e}")
         return []
 
-async def render_page_with_cache(template_name: str, context: Dict[str, Any], path: str, lang: str) -> HTMLResponse:
-    """
-    Рендер страницы с файловым кэшированием
-    
-    Args:
-        template_name: имя шаблона
-        context: контекст для шаблона
-        path: путь страницы для кэша
-        lang: язык страницы
-    
-    Returns:
-        HTMLResponse
-    """
-    # Проверяем файловый кэш
-    cached_data = file_cache.get(path, lang)
-    if cached_data:
-        logger.debug(f"File cache hit for {path}:{lang}")
-        return HTMLResponse(content=cached_data["content"])
-    
-    # Рендерим страницу
-    response = templates.TemplateResponse(template_name, context)
-    
-    # Получаем контент
-    content = response.body.decode('utf-8')
-    
-    # Сохраняем в файловый кэш
-    metadata = {
-        "template": template_name,
-        "path": path,
-        "lang": lang
-    }
-    file_cache.set(path, lang, content, metadata, ttl=3600)  # 1 час TTL
-    
-    return response
-
 @router.get("/", response_class=HTMLResponse)
-@measure_render_time
 async def home(request: Request):
     """Главная страница"""
     # Получаем язык из middleware
@@ -196,7 +160,7 @@ async def home(request: Request):
     background = get_image("background")
     slider_images = get_slider_images()
     
-    context = {
+    return templates.TemplateResponse("public/home.html", {
         "request": request,
         "lang": lang,
         "texts": texts,
@@ -206,12 +170,9 @@ async def home(request: Request):
         "slider_images": slider_images,
         "supported_languages": supported_languages,
         "language_urls": language_urls
-    }
-    
-    return await render_page_with_cache("public/home.html", context, "/", lang)
+    })
 
 @router.get("/about", response_class=HTMLResponse)
-@measure_render_time
 async def about(request: Request):
     """Страница о компании"""
     # Получаем язык из middleware
@@ -227,19 +188,16 @@ async def about(request: Request):
     
     seo_data = get_seo_data("about", lang)
     
-    context = {
+    return templates.TemplateResponse("public/about.html", {
         "request": request,
         "lang": lang,
         "texts": texts,
         "seo": seo_data,
         "supported_languages": supported_languages,
         "language_urls": language_urls
-    }
-    
-    return await render_page_with_cache("public/about.html", context, "/about", lang)
+    })
 
 @router.get("/catalog", response_class=HTMLResponse)
-@measure_render_time
 async def catalog(request: Request):
     """Страница каталога"""
     # Получаем язык из middleware
@@ -255,19 +213,16 @@ async def catalog(request: Request):
     
     seo_data = get_seo_data("catalog", lang)
     
-    context = {
+    return templates.TemplateResponse("public/catalog.html", {
         "request": request,
         "lang": lang,
         "texts": texts,
         "seo": seo_data,
         "supported_languages": supported_languages,
         "language_urls": language_urls
-    }
-    
-    return await render_page_with_cache("public/catalog.html", context, "/catalog", lang)
+    })
 
 @router.get("/contacts", response_class=HTMLResponse)
-@measure_render_time
 async def contacts(request: Request):
     """Страница контактов"""
     # Получаем язык из middleware
@@ -285,16 +240,14 @@ async def contacts(request: Request):
     
     seo_data = get_seo_data("contacts", lang)
     
-    context = {
+    return templates.TemplateResponse("public/contacts.html", {
         "request": request,
         "lang": lang,
         "texts": texts,
         "seo": seo_data,
         "supported_languages": supported_languages,
         "language_urls": language_urls
-    }
-    
-    return await render_page_with_cache("public/contacts.html", context, "/contacts", lang)
+    })
 
 # Мультиязычные алиасы
 @router.get("/ru/", response_class=HTMLResponse)

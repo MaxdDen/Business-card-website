@@ -7,6 +7,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.auth.rate_limit import login_limiter
 from app.auth.security import create_access_token, verify_password, hash_password
+from app.auth.security_headers import set_secure_cookie, delete_secure_cookie
 from app.database.db import query_one, execute
 from email_validator import validate_email, EmailNotValidError
 
@@ -80,15 +81,14 @@ async def login(request: Request, response: Response, email: str = Form(...), pa
 
     token = create_access_token(subject=str(user["id"]), role=user["role"])
     resp = RedirectResponse(url="/cms", status_code=302)
-    # HttpOnly cookie for JWT
-    resp.set_cookie(
+    # Устанавливаем безопасный HttpOnly cookie для JWT
+    set_secure_cookie(
+        response=resp,
         key="access_token",
         value=token,
-        httponly=True,
-        samesite=os.getenv("COOKIE_SAMESITE", "lax"),
-        secure=os.getenv("COOKIE_SECURE", "false").lower() == "true",
         max_age=int(os.getenv("JWT_EXPIRES_MINUTES", "15")) * 60,
-        path="/",
+        httponly=True,
+        samesite="lax"
     )
     return resp
 
@@ -167,14 +167,14 @@ async def register(request: Request, email: str = Form(...), password: str = For
     # auto login
     token = create_access_token(subject=str(user_id), role="editor")
     resp = RedirectResponse(url="/cms", status_code=302)
-    resp.set_cookie(
+    # Устанавливаем безопасный HttpOnly cookie для JWT
+    set_secure_cookie(
+        response=resp,
         key="access_token",
         value=token,
-        httponly=True,
-        samesite=os.getenv("COOKIE_SAMESITE", "lax"),
-        secure=os.getenv("COOKIE_SECURE", "false").lower() == "true",
         max_age=int(os.getenv("JWT_EXPIRES_MINUTES", "15")) * 60,
-        path="/",
+        httponly=True,
+        samesite="lax"
     )
     return resp
 
@@ -182,7 +182,8 @@ async def register(request: Request, email: str = Form(...), password: str = For
 @router.post("/logout")
 async def logout() -> Response:
     resp = RedirectResponse(url="/login", status_code=302)
-    resp.delete_cookie("access_token", path="/")
+    # Удаляем безопасный cookie
+    delete_secure_cookie(resp, "access_token")
     return resp
 
 

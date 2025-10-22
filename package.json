@@ -2,16 +2,39 @@
   "name": "business-card-cms",
   "private": true,
   "version": "0.0.1",
+  "description": "CMS для сайта-визитки дистрибьютора электронной продукции",
   "scripts": {
+    "dev": "powershell -ExecutionPolicy Bypass -File dev.ps1",
+    "run": "powershell -ExecutionPolicy Bypass -File run.ps1",
+    "tailwind:watch": "powershell -ExecutionPolicy Bypass -File tailwind-watch.ps1",
+    "lint": "powershell -ExecutionPolicy Bypass -File lint.ps1",
     "build:css": "tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css",
     "build:css-minify": "tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --minify",
     "build:css-watch": "tailwindcss -i ./app/static/css/input.css -o ./app/static/css/output.css --watch",
     "tailwind:build": "npx @tailwindcss/cli -i ./app/static/css/input.css -o ./app/static/css/output.css",
-    "tailwind:watch": "npx @tailwindcss/cli -i ./app/static/css/input.css -o ./app/static/css/output.css --watch"
+    "tailwind:watch-cli": "npx @tailwindcss/cli -i ./app/static/css/input.css -o ./app/static/css/output.css --watch",
+    "install:all": "npm install && pip install -r requirements.txt",
+    "clean": "rimraf node_modules cache/renders/* __pycache__",
+    "test": "python manage_tests.py"
   },
   "devDependencies": {
     "tailwindcss": "^4.1.0",
-    "@tailwindcss/cli": "^4.1.0"
-  }
+    "@tailwindcss/cli": "^4.1.0",
+    "rimraf": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "python": ">=3.12.0"
+  },
+  "keywords": [
+    "cms",
+    "fastapi",
+    "tailwindcss",
+    "sqlite",
+    "business-card",
+    "website"
+  ],
+  "author": "CMS Developer",
+  "license": "MIT"
 }
 
