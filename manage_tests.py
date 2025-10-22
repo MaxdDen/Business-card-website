@@ -57,6 +57,30 @@ AVAILABLE_TESTS = {
     "build": {
         "file": "test_build_scripts.py",
         "description": "Тест скриптов сборки и развертывания (Этап 13)"
+    },
+    "unit": {
+        "file": "test_validation.py",
+        "description": "Юнит-тесты для утилит валидации"
+    },
+    "unit_cache": {
+        "file": "test_cache.py", 
+        "description": "Юнит-тесты для системы кэширования"
+    },
+    "unit_database": {
+        "file": "test_database.py",
+        "description": "Юнит-тесты для SQL-слоя"
+    },
+    "integration_auth": {
+        "file": "test_auth.py",
+        "description": "Интеграционные тесты аутентификации"
+    },
+    "integration_crud": {
+        "file": "test_crud.py",
+        "description": "Интеграционные тесты CRUD операций"
+    },
+    "lighthouse": {
+        "file": "test_lighthouse.py",
+        "description": "Тесты производительности Lighthouse (Этап 14)"
     }
 }
 
@@ -89,9 +113,18 @@ def list_tests():
     print("📋 ДОСТУПНЫЕ ТЕСТЫ:")
     print("-" * 40)
     for test_id, test_info in AVAILABLE_TESTS.items():
-        file_path = os.path.join(TESTS_DIR, test_info["file"])
+        # Определяем путь к тесту в зависимости от типа
+        if test_id.startswith("unit"):
+            file_path = os.path.join(TESTS_DIR, "unit_tests", test_info["file"])
+        elif test_id.startswith("integration"):
+            file_path = os.path.join(TESTS_DIR, "integration_tests", test_info["file"])
+        elif test_id == "lighthouse":
+            file_path = os.path.join(TESTS_DIR, "performance_tests", test_info["file"])
+        else:
+            file_path = os.path.join(TESTS_DIR, "auto_tests", test_info["file"])
+        
         exists = "✅" if os.path.exists(file_path) else "❌"
-        print(f"{exists} {test_id:<12} - {test_info['description']}")
+        print(f"{exists} {test_id:<20} - {test_info['description']}")
         print(f"    Файл: {test_info['file']}")
     print()
 
@@ -103,7 +136,16 @@ def run_test(test_id):
         return False
     
     test_info = AVAILABLE_TESTS[test_id]
-    test_file = os.path.join(TESTS_DIR, test_info["file"])
+    
+    # Определяем путь к тесту в зависимости от типа
+    if test_id.startswith("unit"):
+        test_file = os.path.join(TESTS_DIR, "unit_tests", test_info["file"])
+    elif test_id.startswith("integration"):
+        test_file = os.path.join(TESTS_DIR, "integration_tests", test_info["file"])
+    elif test_id == "lighthouse":
+        test_file = os.path.join(TESTS_DIR, "performance_tests", test_info["file"])
+    else:
+        test_file = os.path.join(TESTS_DIR, "auto_tests", test_info["file"])
     
     if not os.path.exists(test_file):
         print(f"❌ Ошибка: Файл теста не найден: {test_file}")

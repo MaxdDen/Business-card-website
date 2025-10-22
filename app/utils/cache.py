@@ -95,6 +95,32 @@ class TextCache:
                 "expired_entries": expired_entries,
                 "cache_size": len(self.cache)
             }
+    
+    def warmup(self, pages: list, languages: list, data_loader) -> None:
+        """
+        Прогрев кэша для указанных страниц и языков
+        
+        Args:
+            pages: список страниц для прогрева
+            languages: список языков для прогрева
+            data_loader: функция загрузки данных (page, lang) -> Dict[str, str]
+        """
+        logger.info(f"Starting cache warmup for pages: {pages}, languages: {languages}")
+        warmed_count = 0
+        
+        for page in pages:
+            for lang in languages:
+                try:
+                    # Загружаем данные через data_loader
+                    data = data_loader(page, lang)
+                    if data:
+                        self.set(page, lang, data)
+                        warmed_count += 1
+                        logger.debug(f"Warmed cache for {page}:{lang}")
+                except Exception as e:
+                    logger.error(f"Error warming cache for {page}:{lang}: {e}")
+        
+        logger.info(f"Cache warmup complete: {warmed_count} entries loaded")
 
 
 class ImageCache:

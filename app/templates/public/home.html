@@ -15,25 +15,25 @@
     
     <!-- Content -->
     <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h1 class="text-4xl md:text-6xl font-bold text-white mb-6">
+        <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight">
             {{ texts.title or 'Добро пожаловать' }}
         </h1>
         
         {% if texts.subtitle %}
-        <h2 class="text-xl md:text-2xl text-gray-200 mb-8">
+        <h2 class="text-lg sm:text-xl md:text-2xl text-gray-200 mb-6 sm:mb-8 leading-relaxed">
             {{ texts.subtitle }}
         </h2>
         {% endif %}
         
         {% if texts.description %}
-        <p class="text-lg text-gray-300 mb-10 max-w-2xl mx-auto">
+        <p class="text-base sm:text-lg text-gray-300 mb-8 sm:mb-10 max-w-2xl mx-auto leading-relaxed">
             {{ texts.description }}
         </p>
         {% endif %}
         
         {% if texts.cta_text %}
         <a href="/{{ lang }}/contacts" 
-           class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-300">
+           class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 sm:px-8 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
             {{ texts.cta_text }}
         </a>
         {% endif %}
@@ -42,19 +42,22 @@
 
 <!-- Slider Section -->
 {% if slider_images %}
-<section class="py-16 bg-white dark:bg-gray-800">
+<section class="py-12 sm:py-16 bg-white dark:bg-gray-800">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-bold text-center mb-12 text-gray-900 dark:text-white">
+        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 text-gray-900 dark:text-white">
             {% if lang == 'ru' %}Наши работы{% elif lang == 'en' %}Our Works{% else %}Наші роботи{% endif %}
         </h2>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {% for image in slider_images %}
-            <div class="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <div class="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                 <img src="/{{ image.path }}" 
                      alt="Slider image {{ loop.index }}"
-                     class="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300">
-                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300"></div>
+                     class="w-full h-48 sm:h-56 lg:h-64 object-cover group-hover:scale-105 transition-transform duration-300">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="absolute bottom-4 left-4 right-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <p class="text-sm font-medium">Изображение {{ loop.index }}</p>
+                </div>
             </div>
             {% endfor %}
         </div>

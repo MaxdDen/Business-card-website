@@ -17,28 +17,15 @@
                 <div class="flex items-center space-x-4">
                     <!-- Language Switcher -->
                     <div class="flex items-center space-x-2">
-                        <!-- Debug info -->
-                        <div class="text-xs text-red-600 bg-red-100 p-4 mb-4 border-2 border-red-500">
-                            <strong>🚨 DEBUG INFO 🚨</strong><br>
-                            lang={{ lang }}<br>
-                            supported_languages={{ supported_languages }}<br>
-                            language_urls={{ language_urls }}<br>
-                            language_urls type={{ language_urls.__class__.__name__ }}<br>
-                            language_urls length={{ language_urls|length if language_urls else 'None' }}<br>
-                            <strong>URLs:</strong><br>
-                            {% for lang_key, url in language_urls.items() %}
-                            {{ lang_key }}: {{ url }}<br>
-                            {% endfor %}
-                        </div>
                         {% for supported_lang in supported_languages %}
                         <a href="{{ language_urls[supported_lang] }}" 
-                           class="px-3 py-1 text-sm rounded-md transition-colors
+                           class="px-3 py-1 text-sm rounded-md font-medium transition-all duration-200
                                   {% if supported_lang == lang %}
-                                  bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                                  bg-blue-600 text-white shadow-sm
                                   {% else %}
-                                  text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200
+                                  text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white
                                   {% endif %}"
-                           title="{{ language_urls[supported_lang] }}">
+                           title="Switch to {{ supported_lang.upper() }}">
                             {{ supported_lang|upper }}
                         </a>
                         {% endfor %}
