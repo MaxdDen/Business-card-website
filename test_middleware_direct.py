@@ -33,7 +33,7 @@ def test_direct_middleware():
             print(f"   ✅ URL сгенерированы: {urls}")
             
             # Проверяем, что все языки присутствуют
-            expected_languages = ["en", "ru", "ua"]
+            expected_languages = ["en", "ua", "ru"]
             for lang in expected_languages:
                 if lang in urls:
                     print(f"     ✅ {lang}: {urls[lang]}")

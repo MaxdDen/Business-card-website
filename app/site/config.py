@@ -5,7 +5,7 @@ import os
 from typing import List
 
 # Получаем настройки из переменных окружения
-SUPPORTED_LANGUAGES = os.getenv("SUPPORTED_LANGUAGES", "en,ru,ua").split(",")
+SUPPORTED_LANGUAGES = os.getenv("SUPPORTED_LANGUAGES", "en,ua,ru").split(",")
 DEFAULT_LANGUAGE = os.getenv("DEFAULT_LANGUAGE", "en")
 
 # Валидация языков

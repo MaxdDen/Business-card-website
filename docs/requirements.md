@@ -42,7 +42,7 @@
 ### Авторизация
 - Вход/регистрация по email и паролю.  
 - Проверка корректности формата email и длины пароля (min 8 символов).  
-- Хэширование паролей через bcrypt.  
+- Хэширование паролей только через bcrypt по best practices.  
 - Возможность входа через Google OAuth (вкл/выкл через `.env`).  
 - Защита JWT-токенами (access-токен, время жизни 15 мин).  
 
@@ -202,7 +202,7 @@
 |------|-----|----------|
 | id | INTEGER | PK |
 | email | TEXT | Уникальный |
-| password_hash | TEXT | bcrypt |
+| password_hash | TEXT | bcrypt (только) |
 | role | TEXT | admin / editor |
 | created_at | DATETIME | |
 

@@ -44,12 +44,32 @@
 **Что проверяет:** Сохранение языка при переходах между страницами CMS, языковые алиасы  
 **Запуск:** `python manage_tests.py language_persistence`
 
-### 9. test_security.py
+### 9. test_auth_language_persistence.py
+**Описание:** Тест сохранения языка при авторизации  
+**Что проверяет:** Сохранение выбранного языка при переходе с login.html на dashboard.html, языковые префиксы в URL  
+**Запуск:** `python manage_tests.py auth_language_persistence`
+
+### 10. test_cms_language_links_fix.py
+**Описание:** Тест исправления языковых ссылок в CMS  
+**Что проверяет:** Корректность языковых ссылок в шаблонах, сохранение языка при переходах, работу Language Middleware  
+**Запуск:** `python manage_tests.py language_links_fix`
+
+### 11. test_cms_redirects_fix.py
+**Описание:** Тест исправления редиректов в CMS  
+**Что проверяет:** Переходы между страницами CMS, редиректы после авторизации с сохранением языка, работу роутов без слеша  
+**Запуск:** `python manage_tests.py redirects_fix`
+
+### 12. test_auth_language_links.py
+**Описание:** Тест языковых переходов в авторизации  
+**Что проверяет:** Переходы между страницами login/register с сохранением языка, редиректы после logout, языковые роуты авторизации  
+**Запуск:** `python manage_tests.py auth_language_links`
+
+### 13. test_security.py
 **Описание:** Тест безопасности системы (Этап 12)  
 **Что проверяет:** Security headers, безопасность cookies, валидацию файлов, защиту от SQL/XSS, rate limiting, валидацию паролей  
 **Запуск:** `python manage_tests.py security`
 
-### 10. test_build_scripts.py
+### 14. test_build_scripts.py
 **Описание:** Тест скриптов сборки и развертывания (Этап 13)  
 **Что проверяет:** PowerShell скрипты, Makefile, NPM скрипты, README.md, файлы окружения, структуру директорий  
 **Запуск:** `python manage_tests.py build`

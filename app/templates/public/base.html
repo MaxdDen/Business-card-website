@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ lang or 'ru' }}" data-theme="light">
+<html lang="{{ lang or 'en' }}" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -65,10 +65,11 @@
                 <!-- Language Switcher -->
                 <div class="flex items-center space-x-2">
                     {% for supported_lang in supported_languages %}
-                    <a href="{{ language_urls[supported_lang] }}"
-                       class="px-2 py-1 text-sm rounded {% if supported_lang == lang %}bg-blue-600 text-white{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %} transition-colors">
+                    <button onclick="switchLanguage('{{ supported_lang }}')"
+                            data-language-button="{{ supported_lang }}"
+                            class="px-2 py-1 text-sm rounded {% if supported_lang == lang %}bg-blue-600 text-white{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %} transition-colors">
                         {{ supported_lang.upper() }}
-                    </a>
+                    </button>
                     {% endfor %}
                     
                     <!-- Theme Toggle -->
@@ -118,33 +119,8 @@
     </footer>
     
     <!-- JavaScript -->
-    <script>
-        // Theme toggle functionality
-        function toggleTheme() {
-            const html = document.documentElement;
-            const currentTheme = html.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            
-            html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-        }
-        
-        // Load saved theme
-        document.addEventListener('DOMContentLoaded', function() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            
-            // Mobile menu toggle
-            const mobileMenuButton = document.getElementById('mobile-menu-button');
-            const mobileMenu = document.getElementById('mobile-menu');
-            
-            if (mobileMenuButton && mobileMenu) {
-                mobileMenuButton.addEventListener('click', () => {
-                    mobileMenu.classList.toggle('hidden');
-                });
-            }
-        });
-    </script>
+    <script src="{{ url_for('static', path='js/theme.js') }}"></script>
+    <script src="{{ url_for('static', path='js/language.js') }}"></script>
     
     {% block scripts %}{% endblock %}
 </body>

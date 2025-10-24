@@ -3,11 +3,13 @@
     <a href="/" class="font-semibold">Business Card CMS</a>
     <div class="flex items-center gap-3">
       <button id="theme-toggle" class="px-3 py-1 rounded border border-gray-300 dark:border-gray-700">
-        Тема
+        {{ t.theme or 'Theme' }}
       </button>
       <nav class="flex items-center gap-3 text-sm">
-        <a href="/" class="hover:underline">Главная</a>
-        <a href="/cms" class="hover:underline">CMS</a>
+        <a href="/" class="hover:underline">
+          {{ t.home or 'Home' }}
+        </a>
+        <a href="{{ get_cms_dashboard_url(lang) }}" class="hover:underline">CMS</a>
       </nav>
     </div>
   </div>

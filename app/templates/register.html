@@ -1,50 +1,69 @@
 {% extends "base.html" %}
 
-{% block title %}Регистрация - CMS{% endblock %}
+{% block title %}{{ t.title or 'Registration' }} - CMS{% endblock %}
 
 {% block content %}
 <div class="min-h-screen bg-gray-950 text-gray-100 flex items-center justify-center p-6">
     <div class="w-full max-w-md">
         <div class="bg-gray-900/60 backdrop-blur rounded-2xl border border-gray-800 shadow-xl p-8">
+            <!-- Language Switcher -->
+            <div class="flex justify-end mb-4">
+                <div class="flex items-center space-x-2">
+                    {% for supported_lang in supported_languages %}
+                    <button onclick="switchLanguage('{{ supported_lang }}')"
+                            data-language-button="{{ supported_lang }}"
+                            class="px-3 py-1 text-sm rounded-md font-medium transition-all duration-200
+                                   {% if supported_lang == lang %}
+                                   bg-blue-600 text-white shadow-sm
+                                   {% else %}
+                                   text-gray-400 hover:bg-gray-800 hover:text-gray-200
+                                   {% endif %}"
+                            title="Switch to {{ supported_lang.upper() }}">
+                        {{ supported_lang.upper() }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            
             {% if error %}
             <div class="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 text-red-200 px-4 py-2 text-sm">
                 {{ error }}
             </div>
             {% endif %}
-            <h1 class="text-2xl font-semibold tracking-tight">Создание аккаунта</h1>
-            <p class="mt-1 text-sm text-gray-400">Доступ к панели управления</p>
+            <h1 class="text-2xl font-semibold tracking-tight">{{ t.title or 'Create Account' }}</h1>
+            <p class="mt-1 text-sm text-gray-400">{{ t.subtitle or 'Access to control panel' }}</p>
 
             <form class="mt-8 space-y-6" method="POST" action="/register" novalidate>
                 <input type="hidden" name="csrf_token" value="{{ request.cookies.get('csrftoken', '') }}" />
                 <div class="space-y-4">
                     <div class="space-y-2">
-                        <label for="email" class="text-sm text-gray-300">Email</label>
+                        <label for="email" class="text-sm text-gray-300">{{ t.email or 'Email' }}</label>
                         <input id="email" name="email" type="email" autocomplete="email" required
                                class="w-full rounded-lg bg-gray-900 border border-gray-800 px-3 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                               placeholder="you@example.com" />
+                               placeholder="{{ t.email_placeholder or 'you@example.com' }}" />
                     </div>
                     <div class="space-y-2">
-                        <label for="password" class="text-sm text-gray-300">Пароль (мин. 8 символов)</label>
+                        <label for="password" class="text-sm text-gray-300">{{ t.password_label or 'Password (min. 8 characters)' }}</label>
                         <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required
                                class="w-full rounded-lg bg-gray-900 border border-gray-800 px-3 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                               placeholder="Введите пароль" />
+                               placeholder="{{ t.password_placeholder or 'Enter password' }}" />
                     </div>
                     <div class="space-y-2">
-                        <label for="confirm_password" class="text-sm text-gray-300">Подтверждение пароля</label>
+                        <label for="confirm_password" class="text-sm text-gray-300">{{ t.confirm_password or 'Confirm Password' }}</label>
                         <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" minlength="8" required
                                class="w-full rounded-lg bg-gray-900 border border-gray-800 px-3 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                               placeholder="Повторите пароль" />
+                               placeholder="{{ t.confirm_password_placeholder or 'Repeat password' }}" />
                     </div>
                 </div>
 
                 <button type="submit"
                         class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition-colors px-4 py-2.5 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    Создать аккаунт
+                    {{ t.create_account or 'Create Account' }}
                 </button>
 
                 <p class="text-sm text-gray-400 text-center">
-                    Уже есть аккаунт?
-                    <a href="/login" class="text-gray-200 underline underline-offset-4 hover:no-underline">Войти</a>
+                    {{ t.already_have_account or 'Already have an account?' }}
+                    <a href="{% if lang == 'en' %}/login{% else %}/{{ lang }}/login{% endif %}" class="text-gray-200 underline underline-offset-4 hover:no-underline">{{ t.sign_in or 'Sign In' }}</a>
                 </p>
             </form>
         </div>

@@ -95,6 +95,19 @@ INSERT OR IGNORE INTO texts (page, key, lang, value) VALUES
 ('dashboard', 'meta_optimization', 'ua', 'Мета-теги та оптимізація'),
 ('dashboard', 'access_management', 'ua', 'Управління доступом'),
 
+-- Header translations
+-- English (default)
+('header', 'theme', 'en', 'Theme'),
+('header', 'home', 'en', 'Home'),
+
+-- Russian
+('header', 'theme', 'ru', 'Тема'),
+('header', 'home', 'ru', 'Главная'),
+
+-- Ukrainian
+('header', 'theme', 'ua', 'Тема'),
+('header', 'home', 'ua', 'Головна'),
+
 -- CMS Texts Editor translations
 ('cms_texts', 'title', 'en', 'Text Editor'),
 ('cms_texts', 'subtitle', 'en', 'Content management'),
@@ -502,6 +515,107 @@ INSERT OR IGNORE INTO texts (page, key, lang, value) VALUES
 ('cms_users', 'user_deleted', 'ua', 'Користувача успішно видалено'),
 ('cms_users', 'delete_error', 'en', 'Error deleting user'),
 ('cms_users', 'delete_error', 'ru', 'Ошибка удаления пользователя'),
-('cms_users', 'delete_error', 'ua', 'Помилка видалення користувача');
+('cms_users', 'delete_error', 'ua', 'Помилка видалення користувача'),
+
+-- Login page translations
+-- English (default)
+('login', 'title', 'en', 'Login'),
+('login', 'subtitle', 'en', 'Sign in to your account'),
+('login', 'email', 'en', 'Email'),
+('login', 'password', 'en', 'Password'),
+('login', 'password_placeholder', 'en', 'Enter password'),
+('login', 'forgot_password', 'en', 'Forgot password?'),
+('login', 'login_button', 'en', 'Login'),
+('login', 'no_account', 'en', 'No account?'),
+('login', 'register_link', 'en', 'Register'),
+('login', 'invalid_email', 'en', 'Invalid email format'),
+('login', 'password_too_short', 'en', 'Password must be at least 8 characters'),
+('login', 'invalid_credentials', 'en', 'Invalid email or password'),
+('login', 'login_success', 'en', 'Login successful'),
+
+-- Russian
+('login', 'title', 'ru', 'Вход'),
+('login', 'subtitle', 'ru', 'Войдите в свой аккаунт'),
+('login', 'email', 'ru', 'Email'),
+('login', 'password', 'ru', 'Пароль'),
+('login', 'password_placeholder', 'ru', 'Введите пароль'),
+('login', 'forgot_password', 'ru', 'Забыли пароль?'),
+('login', 'login_button', 'ru', 'Войти'),
+('login', 'no_account', 'ru', 'Нет аккаунта?'),
+('login', 'register_link', 'ru', 'Зарегистрироваться'),
+('login', 'invalid_email', 'ru', 'Некорректный формат email'),
+('login', 'password_too_short', 'ru', 'Пароль должен содержать минимум 8 символов'),
+('login', 'invalid_credentials', 'ru', 'Неверный email или пароль'),
+('login', 'login_success', 'ru', 'Вход выполнен успешно'),
+
+-- Ukrainian
+('login', 'title', 'ua', 'Вхід'),
+('login', 'subtitle', 'ua', 'Увійдіть до свого акаунту'),
+('login', 'email', 'ua', 'Email'),
+('login', 'password', 'ua', 'Пароль'),
+('login', 'password_placeholder', 'ua', 'Введіть пароль'),
+('login', 'forgot_password', 'ua', 'Забули пароль?'),
+('login', 'login_button', 'ua', 'Увійти'),
+('login', 'no_account', 'ua', 'Немає акаунту?'),
+('login', 'register_link', 'ua', 'Зареєструватися'),
+('login', 'invalid_email', 'ua', 'Некорректний формат email'),
+('login', 'password_too_short', 'ua', 'Пароль повинен містити мінімум 8 символів'),
+('login', 'invalid_credentials', 'ua', 'Невірний email або пароль'),
+('login', 'login_success', 'ua', 'Вхід виконано успішно'),
+
+-- Register page translations
+-- English (default)
+('register', 'title', 'en', 'Registration'),
+('register', 'subtitle', 'en', 'Access to control panel'),
+('register', 'email', 'en', 'Email'),
+('register', 'email_placeholder', 'en', 'you@example.com'),
+('register', 'password_label', 'en', 'Password (min. 8 characters)'),
+('register', 'password_placeholder', 'en', 'Enter password'),
+('register', 'confirm_password', 'en', 'Confirm Password'),
+('register', 'confirm_password_placeholder', 'en', 'Repeat password'),
+('register', 'create_account', 'en', 'Create Account'),
+('register', 'already_have_account', 'en', 'Already have an account?'),
+('register', 'sign_in', 'en', 'Sign In'),
+('register', 'invalid_email', 'en', 'Invalid email format'),
+('register', 'password_too_short', 'en', 'Password must be at least 8 characters'),
+('register', 'passwords_dont_match', 'en', 'Passwords do not match'),
+('register', 'email_exists', 'en', 'User with this email already exists'),
+('register', 'registration_success', 'en', 'Registration successful'),
+
+-- Russian
+('register', 'title', 'ru', 'Регистрация'),
+('register', 'subtitle', 'ru', 'Доступ к панели управления'),
+('register', 'email', 'ru', 'Email'),
+('register', 'email_placeholder', 'ru', 'you@example.com'),
+('register', 'password_label', 'ru', 'Пароль (мин. 8 символов)'),
+('register', 'password_placeholder', 'ru', 'Введите пароль'),
+('register', 'confirm_password', 'ru', 'Подтверждение пароля'),
+('register', 'confirm_password_placeholder', 'ru', 'Повторите пароль'),
+('register', 'create_account', 'ru', 'Создать аккаунт'),
+('register', 'already_have_account', 'ru', 'Уже есть аккаунт?'),
+('register', 'sign_in', 'ru', 'Войти'),
+('register', 'invalid_email', 'ru', 'Некорректный формат email'),
+('register', 'password_too_short', 'ru', 'Пароль должен содержать минимум 8 символов'),
+('register', 'passwords_dont_match', 'ru', 'Пароли не совпадают'),
+('register', 'email_exists', 'ru', 'Пользователь с таким email уже существует'),
+('register', 'registration_success', 'ru', 'Регистрация прошла успешно'),
+
+-- Ukrainian
+('register', 'title', 'ua', 'Реєстрація'),
+('register', 'subtitle', 'ua', 'Доступ до панелі керування'),
+('register', 'email', 'ua', 'Email'),
+('register', 'email_placeholder', 'ua', 'you@example.com'),
+('register', 'password_label', 'ua', 'Пароль (мін. 8 символів)'),
+('register', 'password_placeholder', 'ua', 'Введіть пароль'),
+('register', 'confirm_password', 'ua', 'Підтвердження пароля'),
+('register', 'confirm_password_placeholder', 'ua', 'Повторіть пароль'),
+('register', 'create_account', 'ua', 'Створити акаунт'),
+('register', 'already_have_account', 'ua', 'Вже є акаунт?'),
+('register', 'sign_in', 'ua', 'Увійти'),
+('register', 'invalid_email', 'ua', 'Некорректний формат email'),
+('register', 'password_too_short', 'ua', 'Пароль повинен містити мінімум 8 символів'),
+('register', 'passwords_dont_match', 'ua', 'Паролі не співпадають'),
+('register', 'email_exists', 'ua', 'Користувач з таким email вже існує'),
+('register', 'registration_success', 'ua', 'Реєстрація пройшла успішно');
 
 

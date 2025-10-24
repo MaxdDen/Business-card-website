@@ -4,115 +4,56 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
 import jwt
-
-from passlib.context import CryptContext
-from passlib.exc import UnknownHashError
+import bcrypt
 import logging
 
 # Настраиваем логирование для отладки
 logger = logging.getLogger(__name__)
 
-# Инициализируем контекст с обработкой ошибок
-try:
-    _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    logger.info("bcrypt context initialized successfully")
-except Exception as e:
-    logger.error(f"Failed to initialize bcrypt context: {e}")
-    # Fallback на pbkdf2_sha256 если bcrypt не работает
-    _pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
-    logger.info("Using pbkdf2_sha256 as fallback")
+# Используем только bcrypt для хеширования паролей по best practices
+logger.info("Using bcrypt for password hashing")
 
 
 def hash_password(plain_password: str) -> str:
+    """Хэширование пароля с использованием bcrypt по best practices"""
     try:
-        # Ограничиваем длину пароля до 72 байт (ограничение bcrypt)
+        # bcrypt имеет ограничение в 72 байта для пароля
         password_bytes = plain_password.encode('utf-8')
-        original_length = len(password_bytes)
         if len(password_bytes) > 72:
-            # Обрезаем до 72 байт и декодируем обратно
-            plain_password = password_bytes[:72].decode('utf-8', errors='ignore')
-            logger.info(f"Password truncated from {original_length} to {len(plain_password.encode('utf-8'))} bytes during hashing")
+            password_bytes = password_bytes[:72]
+            logger.info(f"Password truncated to 72 bytes for bcrypt compatibility")
         
-        result = _pwd_context.hash(plain_password)
-        logger.info(f"Password hashed successfully: {result[:20]}...")
+        # Генерируем соль и хэшируем пароль с помощью bcrypt
+        salt = bcrypt.gensalt()
+        password_hash = bcrypt.hashpw(password_bytes, salt)
+        
+        result = password_hash.decode('utf-8')
+        logger.info(f"Password hashed successfully with bcrypt: {result[:20]}...")
         return result
         
     except Exception as e:
-        logger.error(f"Error hashing password: {e}")
-        # Fallback на простой хеш если основное хеширование не работает
-        import hashlib
-        salt = os.urandom(32)
-        hash_obj = hashlib.pbkdf2_hmac('sha256', plain_password.encode('utf-8'), salt, 100000)
-        fallback_hash = f"pbkdf2_sha256${salt.hex()}${hash_obj.hex()}"
-        logger.info(f"Using fallback hash: {fallback_hash[:20]}...")
-        return fallback_hash
+        logger.error(f"Error hashing password with bcrypt: {e}")
+        raise ValueError(f"Failed to hash password: {e}")
 
 
 def verify_password(plain_password: str, password_hash: str) -> bool:
+    """Верификация пароля с использованием bcrypt по best practices"""
     try:
-        # Ограничиваем длину пароля до 72 байт (ограничение bcrypt)
+        # bcrypt имеет ограничение в 72 байта для пароля
         password_bytes = plain_password.encode('utf-8')
-        original_length = len(password_bytes)
         if len(password_bytes) > 72:
-            # Обрезаем до 72 байт и декодируем обратно
-            plain_password = password_bytes[:72].decode('utf-8', errors='ignore')
-            logger.info(f"Password truncated from {original_length} to {len(plain_password.encode('utf-8'))} bytes")
+            password_bytes = password_bytes[:72]
+            logger.info(f"Password truncated to 72 bytes for bcrypt verification")
         
-        # Сначала пробуем прямой bcrypt (для новых хэшей)
-        if password_hash.startswith('$2b$') or password_hash.startswith('$2a$') or password_hash.startswith('$2y$'):
-            try:
-                import bcrypt
-                result = bcrypt.checkpw(plain_password.encode('utf-8'), password_hash.encode('utf-8'))
-                logger.info(f"Direct bcrypt verification result: {result}")
-                return result
-            except Exception as bcrypt_error:
-                logger.warning(f"Direct bcrypt verification failed: {bcrypt_error}")
+        # Проверяем пароль с помощью bcrypt
+        stored_hash_bytes = password_hash.encode('utf-8')
+        result = bcrypt.checkpw(password_bytes, stored_hash_bytes)
         
-        # Fallback на passlib
-        logger.info(f"Verifying password against hash: {password_hash[:20]}...")
-        result = _pwd_context.verify(plain_password, password_hash)
         logger.info(f"Password verification result: {result}")
         return result
         
-    except UnknownHashError:
-        # Некорректный/устаревший формат хеша – пробуем fallback
-        logger.warning("Unknown hash format, trying fallback verification")
-        if password_hash.startswith("pbkdf2_sha256$"):
-            try:
-                parts = password_hash.split("$")
-                logger.info(f"Hash parts: {len(parts)}")
-                if len(parts) == 3:
-                    salt = bytes.fromhex(parts[1])
-                    stored_hash = parts[2]
-                    logger.info(f"Salt length: {len(salt)}, stored hash length: {len(stored_hash)}")
-                    import hashlib
-                    hash_obj = hashlib.pbkdf2_hmac('sha256', plain_password.encode('utf-8'), salt, 100000)
-                    computed_hash = hash_obj.hex()
-                    result = computed_hash == stored_hash
-                    logger.info(f"Computed hash: {computed_hash[:20]}...")
-                    logger.info(f"Stored hash: {stored_hash[:20]}...")
-                    logger.info(f"Fallback verification result: {result}")
-                    return result
-            except Exception as fallback_error:
-                logger.error(f"Fallback verification failed: {fallback_error}")
-        return False
     except Exception as e:
-        logger.error(f"Error verifying password: {e}")
-        # Fallback для кастомного хеша
-        if password_hash.startswith("pbkdf2_sha256$"):
-            try:
-                parts = password_hash.split("$")
-                if len(parts) == 3:
-                    salt = bytes.fromhex(parts[1])
-                    stored_hash = parts[2]
-                    import hashlib
-                    # Используем тот же пароль, что и при хешировании (уже обрезанный)
-                    hash_obj = hashlib.pbkdf2_hmac('sha256', plain_password.encode('utf-8'), salt, 100000)
-                    result = hash_obj.hex() == stored_hash
-                    logger.info(f"Fallback verification result: {result}")
-                    return result
-            except Exception as fallback_error:
-                logger.error(f"Fallback verification failed: {fallback_error}")
+        logger.error(f"Error verifying password with bcrypt: {e}")
         return False
 
 

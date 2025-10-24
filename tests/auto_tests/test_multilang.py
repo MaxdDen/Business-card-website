@@ -74,7 +74,7 @@ class MultilangTester:
         """Проверка переключения языков"""
         try:
             # Проверяем все языки на главной странице
-            languages = ["en", "ru", "ua"]
+            languages = ["en", "ua", "ru"]
             for lang in languages:
                 url = f"/{lang}/" if lang != "en" else "/"
                 response = self.session.get(f"{self.base_url}{url}", timeout=10)
@@ -88,7 +88,7 @@ class MultilangTester:
     def test_language_consistency(self):
         """Проверка консистентности языков на всех страницах"""
         pages = ["", "/about", "/catalog", "/contacts"]
-        languages = ["en", "ru", "ua"]
+        languages = ["en", "ua", "ru"]
         
         for page in pages:
             for lang in languages:
@@ -124,7 +124,7 @@ class MultilangTester:
         # Добавляем тестовые данные для разных языков
         self.setup_multilang_test_data()
         
-        languages = ["en", "ru", "ua"]
+        languages = ["en", "ua", "ru"]
         for lang in languages:
             try:
                 url = f"/{lang}/" if lang != "en" else "/"
@@ -172,7 +172,7 @@ class MultilangTester:
     def test_fast_language_switching(self):
         """Проверка быстрого переключения языков"""
         try:
-            languages = ["en", "ru", "ua"]
+            languages = ["en", "ua", "ru"]
             start_time = time.time()
             
             # Быстро переключаемся между языками

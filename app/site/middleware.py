@@ -27,9 +27,24 @@ class LanguageMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """
         Обработка запроса для определения языка
+        Поддерживает URL-based и cookie-based подходы
         """
-        # Извлекаем язык из URL для всех страниц (включая CMS)
-        language = self.extract_language_from_url(request.url.path)
+        # 1. Сначала пытаемся извлечь язык из URL
+        language_from_url = self.extract_language_from_url(request.url.path)
+        
+        # 2. Проверяем cookie с предпочтением пользователя
+        language_from_cookie = request.cookies.get("user_language")
+        
+        # 3. Определяем приоритет: URL > Cookie > Default
+        if language_from_url is not None:
+            # Если в URL есть язык, используем его
+            language = language_from_url
+        elif language_from_cookie and is_language_supported(language_from_cookie):
+            # Если в URL нет языка, но есть в cookie, используем cookie
+            language = language_from_cookie
+        else:
+            # Иначе используем язык по умолчанию
+            language = self.default_language
         
         # Сохраняем язык в состоянии запроса
         request.state.language = language
@@ -37,16 +52,15 @@ class LanguageMiddleware(BaseHTTPMiddleware):
         request.state.default_language = self.default_language
         
         # Логируем определение языка
-        logger.debug(f"Language detected: {language} for path: {request.url.path}")
-        
-        # Отладочная информация для CMS
-        if request.url.path.startswith('/cms/'):
-            logger.info(f"CMS Language Debug - Path: {request.url.path}, Language: {language}")
-            logger.info(f"CMS Language Debug - Supported languages: {self.supported_languages}")
-            logger.info(f"CMS Language Debug - Default language: {self.default_language}")
+        logger.debug(f"Language detected: {language} (URL: {language_from_url}, Cookie: {language_from_cookie}) for path: {request.url.path}")
         
         # Продолжаем обработку запроса
         response = await call_next(request)
+        
+        # 4. Сохраняем выбранный язык в cookie для будущих посещений
+        # (только если язык был определен из URL)
+        if language_from_url is not None:
+            self.set_language_cookie(response, language)
         
         return response
     
@@ -58,35 +72,18 @@ class LanguageMiddleware(BaseHTTPMiddleware):
             path: путь URL
             
         Returns:
-            Код языка или язык по умолчанию
+            Код языка или None если язык не найден в URL
         """
-        # Для CMS роутов проверяем паттерн /cms/{lang}/... или /cms/{lang}
-        if path.startswith('/cms/'):
-            # Проверяем паттерн /cms/{lang}/... (с дополнительным путем)
-            cms_with_path_pattern = re.compile(r'^/cms/([a-z]{2})/(.*)$')
-            match = cms_with_path_pattern.match(path)
-            if match:
-                language = match.group(1)
-                if is_language_supported(language):
-                    return language
-            
-            # Проверяем паттерн /cms/{lang} (без дополнительного пути)
-            cms_exact_pattern = re.compile(r'^/cms/([a-z]{2})$')
-            match = cms_exact_pattern.match(path)
-            if match:
-                language = match.group(1)
-                if is_language_supported(language):
-                    return language
-        else:
-            # Для публичных страниц проверяем обычный паттерн /{lang}/...
-            match = LANGUAGE_PATTERN.match(path)
-            if match:
-                language = match.group(1)
-                if is_language_supported(language):
-                    return language
+        # НОВАЯ СТРУКТУРА: домен → язык → страница
+        # Универсальная проверка для всех типов страниц: /{lang}/...
+        match = LANGUAGE_PATTERN.match(path)
+        if match:
+            language = match.group(1)
+            if is_language_supported(language):
+                return language
         
-        # Если язык не найден или не поддерживается, возвращаем язык по умолчанию
-        return self.default_language
+        # Если язык не найден в URL, возвращаем None
+        return None
     
     def get_language_urls(self, current_path: str, current_language: str) -> dict:
         """
@@ -101,54 +98,60 @@ class LanguageMiddleware(BaseHTTPMiddleware):
         """
         urls = {}
         
-        # Специальная обработка для CMS роутов
-        if current_path.startswith('/cms/'):
-            # Для CMS роутов генерируем URL с языковыми префиксами
-            # Убираем существующий языковой префикс, если он есть
-            clean_path = current_path
-            for lang in self.supported_languages:
-                if current_path.startswith(f'/cms/{lang}/'):
-                    clean_path = f'/cms/{current_path[len(f"/cms/{lang}"):]}'
-                    break
-                elif current_path == f'/cms/{lang}':
-                    clean_path = '/cms/'
-                    break
-            
-            # Нормализуем путь - убираем двойные слеши
-            clean_path = clean_path.replace('//', '/')
-            
-            # Генерируем URL для каждого языка
-            for lang in self.supported_languages:
-                if lang == self.default_language:
-                    # Для языка по умолчанию используем базовый путь
-                    urls[lang] = clean_path
-                else:
-                    # Для других языков добавляем префикс языка
-                    if clean_path == '/cms/':
-                        urls[lang] = f'/cms/{lang}/'
-                    else:
-                        # Убираем /cms/ из начала и добавляем языковой префикс
-                        sub_path = clean_path[4:] if clean_path.startswith('/cms/') else clean_path
-                        urls[lang] = f'/cms/{lang}{sub_path}'
-        else:
-            # Обычная обработка для публичных страниц
-            # Убираем текущий язык из пути, если он есть
-            clean_path = current_path
-            if current_path.startswith(f'/{current_language}/'):
-                clean_path = current_path[len(f'/{current_language}'):]
-            elif current_path == f'/{current_language}':
+        # НОВАЯ СТРУКТУРА: домен → язык → страница
+        # Универсальная обработка для всех типов страниц
+        
+        # Убираем текущий язык из пути, если он есть
+        clean_path = current_path
+        for lang in self.supported_languages:
+            if current_path.startswith(f'/{lang}/'):
+                clean_path = current_path[len(f'/{lang}'):]
+                break
+            elif current_path == f'/{lang}':
                 clean_path = '/'
-            
-            # Генерируем URL для каждого языка
-            for lang in self.supported_languages:
-                if lang == self.default_language:
-                    # Для языка по умолчанию не добавляем префикс
-                    urls[lang] = clean_path
-                else:
-                    # Для других языков добавляем префикс
-                    urls[lang] = f'/{lang}{clean_path}'
+                break
+        
+        # Нормализуем путь - убираем двойные слеши
+        clean_path = clean_path.replace('//', '/')
+        
+        # Генерируем URL для каждого языка
+        # ВАЖНО: Все языки должны иметь префиксы для консистентности
+        for lang in self.supported_languages:
+            if clean_path == '/':
+                urls[lang] = f'/{lang}/'
+            else:
+                urls[lang] = f'/{lang}{clean_path}'
         
         return urls
+    
+    def set_language_cookie(self, response: Response, language: str) -> None:
+        """
+        Установить cookie с выбранным языком
+        
+        Args:
+            response: объект ответа
+            language: код языка
+        """
+        response.set_cookie(
+            key="user_language",
+            value=language,
+            max_age=365*24*60*60,  # 1 год
+            httponly=False,  # Доступен для JavaScript
+            samesite="lax",
+            secure=False  # Для development, в production должно быть True
+        )
+    
+    def get_language_from_cookie(self, request: Request) -> str:
+        """
+        Получить язык из cookie
+        
+        Args:
+            request: объект запроса
+            
+        Returns:
+            Код языка из cookie или None
+        """
+        return request.cookies.get("user_language")
 
 def get_language_from_request(request: Request) -> str:
     """
@@ -187,14 +190,8 @@ def get_language_urls_from_request(request: Request) -> dict:
     current_language = get_language_from_request(request)
     current_path = request.url.path
     
-    # Отладочная информация
-    logger.debug(f"get_language_urls_from_request - Path: {current_path}, Language: {current_language}")
-    
     # Используем статический метод для генерации URL
     urls = _generate_language_urls(current_path, current_language)
-    
-    # Отладочная информация
-    logger.debug(f"get_language_urls_from_request - Generated URLs: {urls}")
     
     return urls
 
@@ -215,68 +212,133 @@ def _generate_language_urls(current_path: str, current_language: str) -> dict:
     default_language = get_default_language()
     urls = {}
     
-    # Отладочная информация
-    logger.debug(f"Generating URLs for path: {current_path}, language: {current_language}")
+    # НОВАЯ СТРУКТУРА: домен → язык → страница
+    # Универсальная обработка для всех типов страниц
     
-    # Специальная обработка для CMS роутов
-    if current_path.startswith('/cms/'):
-        # Для CMS роутов генерируем URL с языковыми префиксами
-        # Сначала определяем базовый путь без языкового префикса
-        
-        # Проверяем, есть ли уже языковой префикс в пути
-        clean_path = current_path
-        for lang in supported_languages:
-            if current_path.startswith(f'/cms/{lang}/'):
-                # Убираем языковой префикс: /cms/ru/texts -> /cms/texts
-                clean_path = f'/cms{current_path[len(f"/cms/{lang}"):]}'
-                break
-            elif current_path == f'/cms/{lang}':
-                # Убираем языковой префикс: /cms/ru -> /cms/
-                clean_path = '/cms/'
-                break
-        
-        # Если путь не начинается с языкового префикса, но содержит /cms/, 
-        # то это уже базовый путь
-        if clean_path == current_path and current_path.startswith('/cms/'):
-            # Путь уже базовый, например /cms/texts
-            pass
-        
-        # Нормализуем путь - убираем двойные слеши
-        clean_path = clean_path.replace('//', '/')
-        
-        # Генерируем URL для каждого языка
-        # ВАЖНО: Все языки должны иметь префиксы для сохранения языка при переходах
-        for lang in supported_languages:
-            if clean_path == '/cms/':
-                urls[lang] = f'/cms/{lang}/'
-            else:
-                # Добавляем языковой префикс для всех языков: /cms/texts -> /cms/ru/texts
-                sub_path = clean_path[4:] if clean_path.startswith('/cms/') else clean_path
-                urls[lang] = f'/cms/{lang}{sub_path}'
-        
-        # Отладочная информация
-        logger.debug(f"CMS URLs generated: {urls}")
-        logger.debug(f"Default language: {default_language}, Current language: {current_language}")
-        logger.debug(f"Clean path: {clean_path}")
-    else:
-        # Обычная обработка для публичных страниц
-        # Убираем текущий язык из пути, если он есть
-        clean_path = current_path
-        if current_path.startswith(f'/{current_language}/'):
-            clean_path = current_path[len(f'/{current_language}'):]
-        elif current_path == f'/{current_language}':
+    # Убираем текущий язык из пути, если он есть
+    clean_path = current_path
+    for lang in supported_languages:
+        if current_path.startswith(f'/{lang}/'):
+            clean_path = current_path[len(f'/{lang}'):]
+            break
+        elif current_path == f'/{lang}':
             clean_path = '/'
-        
-        # Генерируем URL для каждого языка
-        for lang in supported_languages:
-            if lang == default_language:
-                # Для языка по умолчанию не добавляем префикс
-                urls[lang] = clean_path
+            break
+    
+    # Нормализуем путь - убираем двойные слеши
+    clean_path = clean_path.replace('//', '/')
+    
+    # Генерируем URL для каждого языка
+    # Скрываем дефолтный язык из URL
+    for lang in supported_languages:
+        if lang == default_language:
+            # Для дефолтного языка не добавляем префикс
+            if clean_path == '/':
+                urls[lang] = '/'
+            elif clean_path == '/login':
+                urls[lang] = '/login'
+            elif clean_path == '/register':
+                urls[lang] = '/register'
             else:
-                # Для других языков добавляем префикс
+                urls[lang] = clean_path
+        else:
+            # Для других языков добавляем префикс
+            if clean_path == '/':
+                urls[lang] = f'/{lang}/'
+            elif clean_path == '/login':
+                urls[lang] = f'/{lang}/login'
+            elif clean_path == '/register':
+                urls[lang] = f'/{lang}/register'
+            else:
                 urls[lang] = f'/{lang}{clean_path}'
     
-    # Отладочная информация
-    logger.debug(f"Generated URLs: {urls}")
-    
     return urls
+
+def set_language_cookie(response: Response, language: str) -> None:
+    """
+    Установить cookie с выбранным языком (standalone функция)
+    
+    Args:
+        response: объект ответа
+        language: код языка
+    """
+    response.set_cookie(
+        key="user_language",
+        value=language,
+        max_age=365*24*60*60,  # 1 год
+        httponly=False,  # Доступен для JavaScript
+        samesite="lax",
+        secure=False  # Для development, в production должно быть True
+    )
+
+def get_language_from_cookie(request: Request) -> str:
+    """
+    Получить язык из cookie (standalone функция)
+    
+    Args:
+        request: объект запроса
+        
+    Returns:
+        Код языка из cookie или None
+    """
+    return request.cookies.get("user_language")
+
+def clear_language_cookie(response: Response) -> None:
+    """
+    Очистить cookie с языком
+    
+    Args:
+        response: объект ответа
+    """
+    response.delete_cookie(
+        key="user_language",
+        samesite="lax"
+    )
+
+def get_cms_url(path: str, lang: str = None) -> str:
+    """
+    Получить URL для CMS с учетом дефолтного языка
+    
+    Args:
+        path: путь без языкового префикса (например, "texts", "images")
+        lang: язык (если None, используется текущий из контекста)
+        
+    Returns:
+        URL с языковым префиксом или без него для дефолтного языка
+    """
+    from app.site.config import get_default_language
+    
+    if lang is None:
+        # Если язык не передан, используем дефолтный
+        lang = get_default_language()
+    
+    default_lang = get_default_language()
+    
+    # Если это дефолтный язык, не добавляем префикс
+    if lang == default_lang:
+        return f"/cms/{path}"
+    else:
+        return f"/{lang}/cms/{path}"
+
+def get_cms_dashboard_url(lang: str = None) -> str:
+    """
+    Получить URL для дашборда CMS с учетом дефолтного языка
+    
+    Args:
+        lang: язык (если None, используется текущий из контекста)
+        
+    Returns:
+        URL с языковым префиксом или без него для дефолтного языка
+    """
+    from app.site.config import get_default_language
+    
+    if lang is None:
+        lang = get_default_language()
+    
+    default_lang = get_default_language()
+    
+    # Если это дефолтный язык, не добавляем префикс
+    if lang == default_lang:
+        return "/cms/"
+    else:
+        return f"/{lang}/cms/"

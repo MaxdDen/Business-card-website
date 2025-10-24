@@ -1,4 +1,5 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -10,11 +11,17 @@ from app.auth.security_headers import SecurityHeadersMiddleware
 from app.auth.routes import router as auth_router
 from app.cms.routes import router as cms_router
 from app.site.routes import router as site_router
-from app.site.middleware import LanguageMiddleware
+from app.site.middleware import LanguageMiddleware, get_cms_url, get_cms_dashboard_url
 from dotenv import load_dotenv
 from app.database.db import ensure_database_initialized, smoke_test, ensure_admin_user_exists
 
 load_dotenv()
+
+# Настройка логирования для отладки
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,7 +41,20 @@ app.add_middleware(CSRFMiddleware)
 app.add_middleware(AuthRedirectMiddleware)
 app.add_middleware(LanguageMiddleware)
 app.include_router(auth_router)
-app.include_router(cms_router)
+# CMS роуты доступны через языковые префиксы: /{lang}/cms/...
+# Создаем отдельные роуты для каждого языка
+from app.site.config import get_supported_languages, get_default_language
+supported_languages = get_supported_languages()
+default_language = get_default_language()
+
+for lang in supported_languages:
+    if lang == default_language:
+        # Для дефолтного языка без префикса
+        app.include_router(cms_router, prefix="/cms", tags=[f"cms-{lang}"])
+    else:
+        # Для других языков с префиксом
+        app.include_router(cms_router, prefix=f"/{lang}/cms", tags=[f"cms-{lang}"])
+
 app.include_router(site_router)
 
 # Обработка 401 ошибок делегируется middleware
@@ -43,6 +63,12 @@ app.include_router(site_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 templates = Jinja2Templates(directory="app/templates")
+
+# Добавляем глобальные функции в контекст шаблонов
+templates.env.globals.update({
+    "get_cms_url": get_cms_url,
+    "get_cms_dashboard_url": get_cms_dashboard_url
+})
 
 @app.get("/health")
 async def healthcheck() -> dict:

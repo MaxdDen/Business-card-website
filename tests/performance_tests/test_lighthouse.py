@@ -140,7 +140,7 @@ class TestLighthousePerformance(unittest.TestCase):
         
         print("\n🌍 Тестирование производительности мультиязычных страниц...")
         
-        languages = ["ru", "en", "ua"]
+        languages = ["en", "ua", "ru"]
         pages = ["", "about", "catalog", "contacts"]
         
         for lang in languages:

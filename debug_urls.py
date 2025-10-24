@@ -27,7 +27,7 @@ def debug_urls():
         print(f"\n📋 Путь: {path}")
         
         # Тестируем для разных языков
-        for lang in ["ru", "en", "ua"]:
+        for lang in ["en", "ua", "ru"]:
             urls = _generate_language_urls(path, lang)
             print(f"   Текущий язык: {lang}")
             for url_lang, url in urls.items():

@@ -67,7 +67,7 @@ class PublicSiteTester:
     
     def test_multilang_routes(self):
         """Проверка мультиязычных роутов"""
-        languages = ["ru", "en", "ua"]
+        languages = ["en", "ua", "ru"]
         pages = ["", "/about", "/catalog", "/contacts"]
         
         for lang in languages:

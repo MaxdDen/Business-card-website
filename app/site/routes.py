@@ -2,32 +2,30 @@
 Публичные роуты сайта-визитки
 """
 import logging
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, HTTPException, Form
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from app.database.db import query_all, query_one
 from app.utils.cache import text_cache, image_cache
-from app.site.middleware import get_language_from_request, get_supported_languages_from_request, get_language_urls_from_request
+from app.site.middleware import get_language_from_request, get_supported_languages_from_request, get_language_urls_from_request, set_language_cookie
 from typing import Optional, Dict, Any
 import os
+from app.site.config import get_default_language
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
-# Поддерживаемые языки
-SUPPORTED_LANGUAGES = ["ru", "en", "ua"]
-DEFAULT_LANGUAGE = "ru"
 
-def get_text(page: str, key: str, lang: str = DEFAULT_LANGUAGE) -> str:
+def get_text(page: str, key: str, lang: str = get_default_language()) -> str:
     """
     Получить текст из БД с кэшированием
     
     Args:
         page: страница (home, about, catalog, contacts)
         key: ключ поля (title, subtitle, description, etc.)
-        lang: язык (ru, en, ua)
+        lang: язык (en, ua, ru)
     
     Returns:
         Значение текста или пустую строку
@@ -46,7 +44,7 @@ def get_text(page: str, key: str, lang: str = DEFAULT_LANGUAGE) -> str:
         logger.error(f"Ошибка получения текста {page}.{key}.{lang}: {e}")
         return ""
 
-def get_seo_data(page: str, lang: str = DEFAULT_LANGUAGE) -> Dict[str, str]:
+def get_seo_data(page: str, lang: str = get_default_language()) -> Dict[str, str]:
     """
     Получить SEO данные для страницы
     
@@ -297,3 +295,22 @@ async def contacts_en(request: Request):
 @router.get("/ua/contacts", response_class=HTMLResponse)
 async def contacts_ua(request: Request):
     return await contacts(request)
+
+# API endpoint для переключения языка
+@router.post("/api/set-language")
+async def set_language_api(language: str = Form(...)):
+    """
+    API endpoint для программного переключения языка
+    Устанавливает cookie с выбранным языком
+    """
+    from app.site.config import is_language_supported
+    
+    # Проверяем, поддерживается ли язык
+    if not is_language_supported(language):
+        raise HTTPException(status_code=400, detail=f"Language '{language}' is not supported")
+    
+    # Создаем JSON ответ с cookie
+    response = JSONResponse(content={"success": True, "language": language})
+    set_language_cookie(response, language)
+    
+    return response

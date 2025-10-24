@@ -185,7 +185,7 @@ def validate_language(lang: str) -> Tuple[bool, str]:
     Returns:
         (is_valid, error_message)
     """
-    valid_langs = ["ru", "en", "ua"]
+    valid_langs = ["en", "ua", "ru"]
     
     if lang not in valid_langs:
         return False, f"Недопустимый язык. Доступные: {', '.join(valid_langs)}"

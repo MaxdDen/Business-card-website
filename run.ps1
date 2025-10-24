@@ -57,5 +57,12 @@ Write-Host ""
 Write-Host "Для остановки нажмите Ctrl+C" -ForegroundColor Yellow
 Write-Host ""
 
-# Запускаем сервер
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+# Завершение существующих процессов для предотвращения зависших соединений
+Write-Host "🔄 Завершение существующих процессов..." -ForegroundColor Cyan
+Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process uvicorn -ErrorAction SilentlyContinue | Stop-Process -Force
+Start-Sleep -Seconds 2
+
+# Запускаем сервер с параметрами для предотвращения зависших соединений
+Write-Host "🚀 Запуск сервера с исправлением зависших соединений..." -ForegroundColor Green
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 30 --limit-concurrency 100 --limit-max-requests 1000

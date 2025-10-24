@@ -39,7 +39,7 @@ def debug_middleware():
         if current_path.startswith('/cms/'):
             # Определяем базовый путь
             clean_path = current_path
-            for lang in ["ru", "en", "ua"]:
+            for lang in ["en", "ua", "ru"]:
                 if current_path.startswith(f'/cms/{lang}/'):
                     clean_path = f'/cms{current_path[len(f"/cms/{lang}"):]}'
                     break

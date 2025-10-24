@@ -8,7 +8,7 @@ def test_url_generation():
     
     # Симулируем логику из middleware
     def generate_cms_urls(current_path, current_language):
-        supported_languages = ["en", "ru", "ua"]
+        supported_languages = ["en", "ua", "ru"]
         default_language = "en"
         urls = {}
         

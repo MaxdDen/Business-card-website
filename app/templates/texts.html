@@ -18,20 +18,21 @@
                     <!-- Language Switcher -->
                     <div class="flex items-center space-x-2">
                         {% for supported_lang in supported_languages %}
-                        <a href="{{ language_urls[supported_lang] }}" 
-                           class="px-3 py-1 text-sm rounded-md font-medium transition-all duration-200
-                                  {% if supported_lang == lang %}
-                                  bg-blue-600 text-white shadow-sm
-                                  {% else %}
-                                  text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white
-                                  {% endif %}"
-                           title="Switch to {{ supported_lang.upper() }}">
+                        <button onclick="switchLanguage('{{ supported_lang }}')"
+                                data-language-button="{{ supported_lang }}"
+                                class="px-3 py-1 text-sm rounded-md font-medium transition-all duration-200
+                                       {% if supported_lang == lang %}
+                                       bg-blue-600 text-white shadow-sm
+                                       {% else %}
+                                       text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white
+                                       {% endif %}"
+                                title="Switch to {{ supported_lang.upper() }}">
                             {{ supported_lang|upper }}
-                        </a>
+                        </button>
                         {% endfor %}
                     </div>
                     
-                    <a href="/cms" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <a href="{{ get_cms_dashboard_url(lang) }}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                         {{ t.back_to_dashboard or '← Back to Dashboard' }}
                     </a>
                 </div>
@@ -144,96 +145,5 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const pageSelect = document.getElementById('page-select');
-    const langSelect = document.getElementById('lang-select');
-    const form = document.getElementById('texts-form');
-    const notification = document.getElementById('notification');
-
-    // Загрузить тексты при изменении страницы или языка
-    function loadTexts() {
-        const page = pageSelect.value;
-        const lang = langSelect.value;
-        
-        fetch(`/cms/api/texts?page=${page}&lang=${lang}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Заполняем форму данными
-                    document.getElementById('title').value = data.texts.title || '';
-                    document.getElementById('subtitle').value = data.texts.subtitle || '';
-                    document.getElementById('description').value = data.texts.description || '';
-                    document.getElementById('cta_text').value = data.texts.cta_text || '';
-                    document.getElementById('phone').value = data.texts.phone || '';
-                    document.getElementById('address').value = data.texts.address || '';
-                } else {
-                    showNotification('Ошибка загрузки текстов: ' + data.message, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Ошибка:', error);
-                showNotification('Ошибка загрузки текстов', 'error');
-            });
-    }
-
-
-    // Сохранить тексты
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const page = pageSelect.value;
-        const lang = langSelect.value;
-        const formData = new FormData(form);
-        const texts = {};
-        
-        // Собираем данные формы
-        for (let [key, value] of formData.entries()) {
-            texts[key] = value;
-        }
-
-        fetch('/cms/api/texts', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                page: page,
-                lang: lang,
-                texts: texts
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showNotification('Тексты успешно сохранены', 'success');
-            } else {
-                showNotification('Ошибка сохранения: ' + data.message, 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Ошибка:', error);
-            showNotification('Ошибка сохранения текстов', 'error');
-        });
-    });
-
-    // Загрузить тексты при изменении страницы или языка
-    pageSelect.addEventListener('change', loadTexts);
-    langSelect.addEventListener('change', loadTexts);
-
-    // Показать уведомление
-    function showNotification(message, type) {
-        notification.className = `mt-4 p-4 rounded-md ${type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`;
-        notification.textContent = message;
-        notification.classList.remove('hidden');
-        
-        setTimeout(() => {
-            notification.classList.add('hidden');
-        }, 5000);
-    }
-
-    // Загрузить тексты при загрузке страницы
-    loadTexts();
-});
-</script>
+<script src="{{ url_for('static', path='js/texts.js') }}"></script>
 {% endblock %}

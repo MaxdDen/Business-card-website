@@ -20,23 +20,24 @@
                     <!-- Language Switcher -->
                     <div class="flex items-center space-x-2">
                         {% for supported_lang in supported_languages %}
-                        <a href="{{ language_urls[supported_lang] }}"
-                           class="px-3 py-1 text-sm rounded-md font-medium transition-all duration-200
-                                  {% if supported_lang == lang %}
-                                  bg-blue-600 text-white shadow-sm
-                                  {% else %}
-                                  text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white
-                                  {% endif %}"
-                           title="Switch to {{ supported_lang.upper() }}">
+                        <button onclick="switchLanguage('{{ supported_lang }}')"
+                                data-language-button="{{ supported_lang }}"
+                                class="px-3 py-1 text-sm rounded-md font-medium transition-all duration-200
+                                       {% if supported_lang == lang %}
+                                       bg-blue-600 text-white shadow-sm
+                                       {% else %}
+                                       text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white
+                                       {% endif %}"
+                                title="Switch to {{ supported_lang.upper() }}">
                             {{ supported_lang.upper() }}
-                        </a>
+                        </button>
                         {% endfor %}
                     </div>
                     
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                         {{ user_role|title }}
                     </span>
-                    <a href="/logout" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <a href="{% if lang == 'en' %}/logout{% else %}/{{ lang }}/logout{% endif %}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                         {{ t.logout or 'Logout' }}
                     </a>
                 </div>
@@ -135,7 +136,7 @@
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <!-- Texts Editor -->
-                    <a href="/cms/texts" class="group relative bg-white dark:bg-gray-700 p-6 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition-colors">
+                    <a href="{{ get_cms_url('texts', lang) }}" class="group relative bg-white dark:bg-gray-700 p-6 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition-colors">
                         <div class="flex items-center">
                             <div class="flex-shrink-0">
                                 <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-800 transition-colors">
@@ -155,8 +156,8 @@
                         </div>
                     </a>
 
-                    <!-- Images Manager -->
-                    <a href="/cms/images" class="group relative bg-white dark:bg-gray-700 p-6 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-green-300 dark:hover:border-green-500 transition-colors">
+                    <!-- Images Manager --> 
+                    <a href="{{ get_cms_url('images', lang) }}" class="group relative bg-white dark:bg-gray-700 p-6 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-green-300 dark:hover:border-green-500 transition-colors">
                         <div class="flex items-center">
                             <div class="flex-shrink-0">
                                 <div class="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center group-hover:bg-green-200 dark:group-hover:bg-green-800 transition-colors">
@@ -177,7 +178,7 @@
                     </a>
 
                     <!-- SEO Manager -->
-                    <a href="/cms/seo" class="group relative bg-white dark:bg-gray-700 p-6 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-500 transition-colors">
+                    <a href="{{ get_cms_url('seo', lang) }}" class="group relative bg-white dark:bg-gray-700 p-6 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-500 transition-colors">
                         <div class="flex items-center">
                             <div class="flex-shrink-0">
                                 <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center group-hover:bg-purple-200 dark:group-hover:bg-purple-800 transition-colors">
@@ -199,7 +200,7 @@
 
                     <!-- Users Manager (только для admin) -->
                     {% if user_role == "admin" %}
-                    <a href="/cms/users" class="group relative bg-white dark:bg-gray-700 p-6 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-orange-300 dark:hover:border-orange-500 transition-colors">
+                    <a href="{{ get_cms_url('users', lang) }}" class="group relative bg-white dark:bg-gray-700 p-6 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-orange-300 dark:hover:border-orange-500 transition-colors">
                         <div class="flex items-center">
                             <div class="flex-shrink-0">
                                 <div class="w-10 h-10 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center group-hover:bg-orange-200 dark:group-hover:bg-orange-800 transition-colors">
@@ -223,23 +224,6 @@
             </div>
         </div>
 
-        <!-- Active Languages -->
-        {% if stats.active_languages %}
-        <div class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 class="text-lg font-medium text-gray-900 dark:text-white">Активные языки</h2>
-            </div>
-            <div class="p-6">
-                <div class="flex flex-wrap gap-2">
-                    {% for lang in stats.active_languages %}
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                        {{ lang|upper }}
-                    </span>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-        {% endif %}
     </div>
 </div>
 {% endblock %}

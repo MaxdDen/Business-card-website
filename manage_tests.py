@@ -10,7 +10,7 @@ import subprocess
 from datetime import datetime
 
 # Путь к папке с тестами
-TESTS_DIR = "tests/auto_tests"
+TESTS_DIR = "tests"
 
 # Список доступных тестов
 AVAILABLE_TESTS = {
@@ -50,6 +50,10 @@ AVAILABLE_TESTS = {
         "file": "test_cms_language_simple.py",
         "description": "Упрощенный тест языковых роутов CMS"
     },
+    "language_cookie": {
+        "file": "test_language_cookie_persistence.py",
+        "description": "Тест cookie-based хранения языка (best practices)"
+    },
     "security": {
         "file": "test_security.py",
         "description": "Тест безопасности системы (Этап 12)"
@@ -57,6 +61,26 @@ AVAILABLE_TESTS = {
     "build": {
         "file": "test_build_scripts.py",
         "description": "Тест скриптов сборки и развертывания (Этап 13)"
+    },
+    "js_separation": {
+        "file": "test_js_separation.py",
+        "description": "Тест выноса скриптов из HTML в отдельные JS файлы"
+    },
+    "url_structure": {
+        "file": "test_url_structure_fix.py",
+        "description": "Тест новой структуры URL: домен → язык → страница"
+    },
+    "auth_language_redirect": {
+        "file": "test_auth_language_redirect.py",
+        "description": "Тест сохранения языка при переходе с авторизации на дашборд"
+    },
+    "best_practices_links": {
+        "file": "test_best_practices_links.py",
+        "description": "Тест исправлений ссылок по best practices"
+    },
+    "header_translations": {
+        "file": "test_header_translations.py",
+        "description": "Тест переводов в header.html"
     },
     "unit": {
         "file": "test_validation.py",
@@ -81,6 +105,46 @@ AVAILABLE_TESTS = {
     "lighthouse": {
         "file": "test_lighthouse.py",
         "description": "Тесты производительности Lighthouse (Этап 14)"
+    },
+    "session_expiry": {
+        "file": "test_session_expiry.py",
+        "description": "Тест функциональности истечения сессии"
+    },
+    "password_fix": {
+        "file": "test_password_fix.py",
+        "description": "Тест исправления ошибки с длиной пароля в bcrypt"
+    },
+    "startup_fix": {
+        "file": "test_startup_fix.py",
+        "description": "Тест исправления ошибки при запуске приложения"
+    },
+    "no_bcrypt_errors": {
+        "file": "test_no_bcrypt_errors.py",
+        "description": "Тест отсутствия ошибок bcrypt при запуске"
+    },
+    "bcrypt_implementation": {
+        "file": "test_bcrypt_implementation.py",
+        "description": "Тест корректного использования bcrypt по best practices"
+    },
+    "auth_multilang": {
+        "file": "test_auth_multilang.py",
+        "description": "Тест мультиязычности страниц авторизации (login/register)"
+    },
+    "language_links_fix": {
+        "file": "test_cms_language_links_fix.py",
+        "description": "Тест исправления языковых ссылок в CMS"
+    },
+    "redirects_fix": {
+        "file": "test_cms_redirects_fix.py",
+        "description": "Тест исправления редиректов в CMS"
+    },
+    "auth_language_links": {
+        "file": "test_auth_language_links.py",
+        "description": "Тест языковых переходов в авторизации"
+    },
+    "auth_language_persistence": {
+        "file": "test_auth_language_persistence.py",
+        "description": "Тест сохранения языка при авторизации"
     }
 }
 
