@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "crm/base.html" %}
 
 {% block title %}{{ t.title or 'Registration' }} - CMS{% endblock %}
 
@@ -6,24 +6,6 @@
 <div class="min-h-screen bg-gray-950 text-gray-100 flex items-center justify-center p-6">
     <div class="w-full max-w-md">
         <div class="bg-gray-900/60 backdrop-blur rounded-2xl border border-gray-800 shadow-xl p-8">
-            <!-- Language Switcher -->
-            <div class="flex justify-end mb-4">
-                <div class="flex items-center space-x-2">
-                    {% for supported_lang in supported_languages %}
-                    <button onclick="switchLanguage('{{ supported_lang }}')"
-                            data-language-button="{{ supported_lang }}"
-                            class="px-3 py-1 text-sm rounded-md font-medium transition-all duration-200
-                                   {% if supported_lang == lang %}
-                                   bg-blue-600 text-white shadow-sm
-                                   {% else %}
-                                   text-gray-400 hover:bg-gray-800 hover:text-gray-200
-                                   {% endif %}"
-                            title="Switch to {{ supported_lang.upper() }}">
-                        {{ supported_lang.upper() }}
-                    </button>
-                    {% endfor %}
-                </div>
-            </div>
             
             {% if error %}
             <div class="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 text-red-200 px-4 py-2 text-sm">

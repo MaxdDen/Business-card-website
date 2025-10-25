@@ -106,6 +106,22 @@ AVAILABLE_TESTS = {
         "file": "test_lighthouse.py",
         "description": "Тесты производительности Lighthouse (Этап 14)"
     },
+    "template_parser": {
+        "file": "test_template_parser.py",
+        "description": "Тест парсера шаблонов (Этап 3)"
+    },
+    "template_variables_multilang": {
+        "file": "test_template_variables_multilang.py",
+        "description": "Тест мультиязычности Template Variables"
+    },
+    "template_variables_improvements": {
+        "file": "test_template_variables_improvements.py",
+        "description": "Тест улучшений страницы template_variables"
+    },
+    "template_variables_structure": {
+        "file": "test_template_variables_structure.py",
+        "description": "Тест исправленной структуры template_variables"
+    },
     "session_expiry": {
         "file": "test_session_expiry.py",
         "description": "Тест функциональности истечения сессии"

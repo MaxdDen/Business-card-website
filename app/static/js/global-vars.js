@@ -3,6 +3,16 @@
  * Глобальные переменные приложения
  */
 
+// Server-side variables injection
+// Инъекция серверных переменных
+function injectServerVariables() {
+    // Server-side variables injection
+    // Инъекция серверных переменных
+    window.defaultLanguage = '{{ default_language }}';
+    window.supportedLanguages = {{ supported_languages | tojson | safe }};
+    window.currentLanguage = '{{ lang }}';
+}
+
 // Initialize global variables from server-side data
 // Инициализация глобальных переменных из серверных данных
 function initializeGlobalVariables() {

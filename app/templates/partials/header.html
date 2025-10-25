@@ -1,7 +1,26 @@
 <header class="w-full border-b border-gray-200 dark:border-gray-800">
   <div class="container max-w-6xl py-3 flex items-center justify-between">
-    <a href="/" class="font-semibold">Business Card CMS</a>
+    <a href=# class="font-semibold">Business Card CMS</a>
     <div class="flex items-center gap-3">
+      <!-- Language Switcher -->
+      {% if supported_languages %}
+      <div class="flex items-center space-x-2">
+        {% for supported_lang in supported_languages %}
+        <button onclick="switchLanguage('{{ supported_lang }}')"
+                data-language-button="{{ supported_lang }}"
+                class="px-3 py-1 text-sm rounded-md font-medium transition-all duration-200
+                       {% if supported_lang == lang %}
+                       bg-blue-600 text-white shadow-sm
+                       {% else %}
+                       text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white
+                       {% endif %}"
+                title="Switch to {{ supported_lang.upper() }}">
+            {{ supported_lang.upper() }}
+        </button>
+        {% endfor %}
+      </div>
+      {% endif %}
+      
       <button id="theme-toggle" class="px-3 py-1 rounded border border-gray-300 dark:border-gray-700">
         {{ t.theme or 'Theme' }}
       </button>
@@ -9,7 +28,6 @@
         <a href="/" class="hover:underline">
           {{ t.home or 'Home' }}
         </a>
-        <a href="{{ get_cms_dashboard_url(lang) }}" class="hover:underline">CMS</a>
       </nav>
     </div>
   </div>

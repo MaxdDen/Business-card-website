@@ -5,13 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}CMS{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', path='css/output.css') }}" />
-    <!-- Global variables will be set by server-side template -->
-    <script>
-        // Server-side variables injection
-        window.defaultLanguage = '{{ default_language }}';
-        window.supportedLanguages = {{ supported_languages | tojson }};
-        window.currentLanguage = '{{ lang }}';
-    </script>
     <script src="{{ url_for('static', path='js/global-vars.js') }}"></script>
     <script src="{{ url_for('static', path='js/theme.js') }}"></script>
     <script src="{{ url_for('static', path='js/language.js') }}"></script>

@@ -76,7 +76,8 @@ def get_dashboard_translations(lang: str) -> Dict[str, str]:
     translation_keys = [
         'title', 'welcome', 'logout', 'images', 'languages', 'texts', 'users',
         'quick_actions', 'edit_texts', 'content_management', 'upload_management',
-        'seo_settings', 'meta_optimization', 'access_management'
+        'seo_settings', 'meta_optimization', 'access_management', 
+        'template_variables', 'variable_management'
     ]
     
     for key in translation_keys:
@@ -173,6 +174,28 @@ def get_cms_users_translations(lang: str) -> Dict[str, str]:
     return translations
 
 
+def get_cms_template_variables_translations(lang: str) -> Dict[str, str]:
+    """Получить переводы для CMS Template Variables Manager"""
+    translations = {}
+    
+    translation_keys = [
+        'title', 'subtitle', 'back_to_dashboard', 'template_variables', 'management',
+        'total_pages', 'total_variables', 'missing_variables', 'sync', 'analyze', 'refresh',
+        'sync_variables', 'analyze_templates', 'refresh_data', 'sync_success', 'sync_error',
+        'analysis_success', 'analysis_error', 'load_error', 'no_variables', 'no_templates',
+        'database_variables', 'template_analysis', 'variables_in_db', 'template_analysis_results',
+        'page', 'language', 'variables_count', 'languages_count', 'file', 'variables', 'issues',
+        'problems', 'unclosed_tag', 'invalid_syntax', 'sync_completed', 'analysis_completed',
+        'sync_loading', 'analysis_loading', 'sync_button', 'analyze_button', 'refresh_button',
+        'sync_variables_desc', 'analyze_templates_desc', 'refresh_data_desc'
+    ]
+    
+    for key in translation_keys:
+        translations[key] = get_text('cms_template_variables', key, lang)
+    
+    return translations
+
+
 @router.get("/")
 async def dashboard(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
     """Главная панель CMS"""
@@ -204,7 +227,7 @@ async def dashboard(request: Request, current_user: Dict[str, Any] = Depends(get
         translations.update(header_translations)
         
         return templates.TemplateResponse(
-            "dashboard.html",
+            "crm/dashboard.html",
             {
                 "request": request,
                 "user_email": user_email,
@@ -237,7 +260,7 @@ async def texts_editor(request: Request, current_user: Dict[str, Any] = Depends(
     translations.update(header_translations)
     
     return templates.TemplateResponse(
-        "texts.html",
+        "crm/texts.html",
         {
             "request": request,
             "user_email": current_user.get("email", "Пользователь"),
@@ -265,7 +288,7 @@ async def images_manager(request: Request, current_user: Dict[str, Any] = Depend
     translations.update(header_translations)
     
     return templates.TemplateResponse(
-        "images.html",
+        "crm/images.html",
         {
             "request": request,
             "user_email": current_user.get("email", "Пользователь"),
@@ -293,7 +316,7 @@ async def seo_manager(request: Request, current_user: Dict[str, Any] = Depends(g
     translations.update(header_translations)
     
     return templates.TemplateResponse(
-        "seo.html",
+        "crm/seo.html",
         {
             "request": request,
             "user_email": current_user.get("email", "Пользователь"),
@@ -324,7 +347,35 @@ async def users_manager(request: Request, current_user: Dict[str, Any] = Depends
     translations.update(header_translations)
     
     return templates.TemplateResponse(
-        "users.html",
+        "crm/users.html",
+        {
+            "request": request,
+            "user_email": current_user.get("email", "Пользователь"),
+            "lang": lang,
+            "supported_languages": supported_languages,
+            "language_urls": language_urls,
+            "t": translations,
+            "get_cms_url": get_cms_url,
+            "get_cms_dashboard_url": get_cms_dashboard_url
+        }
+    )
+
+
+@router.get("/template-variables")
+async def template_variables_manager(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Управление переменными шаблонов"""
+    # Получаем язык и настройки мультиязычности
+    lang = get_language_from_request(request)
+    supported_languages = get_supported_languages_from_request(request)
+    language_urls = get_language_urls_from_request(request)
+    
+    # Получаем переводы для CMS Template Variables Manager и Header
+    translations = get_cms_template_variables_translations(lang)
+    header_translations = get_header_translations(lang)
+    translations.update(header_translations)
+    
+    return templates.TemplateResponse(
+        "crm/template_variables.html",
         {
             "request": request,
             "user_email": current_user.get("email", "Пользователь"),
@@ -1136,4 +1187,183 @@ async def refresh_session(request: Request, response: JSONResponse):
     except Exception as e:
         logger.error(f"Session refresh error: {e}")
         raise HTTPException(status_code=500, detail="Session refresh failed")
+
+
+# ===== СТРАНИЦА УПРАВЛЕНИЯ ПЕРЕМЕННЫМИ ШАБЛОНОВ =====
+
+@router.get("/template-variables")
+async def template_variables_page(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Страница управления переменными шаблонов"""
+    try:
+        lang = get_language_from_request(request)
+        language_urls = get_language_urls_from_request(request)
+        supported_languages = get_supported_languages_from_request(request)
+        
+        return templates.TemplateResponse("crm/template_variables.html", {
+            "request": request,
+            "current_user": current_user,
+            "lang": lang,
+            "language_urls": language_urls,
+            "supported_languages": supported_languages,
+            "cms_url": get_cms_url(request),
+            "cms_dashboard_url": get_cms_dashboard_url(request)
+        })
+        
+    except Exception as e:
+        logger.error(f"Ошибка загрузки страницы переменных шаблонов: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load template variables page")
+
+
+# ===== API ENDPOINTS ДЛЯ УПРАВЛЕНИЯ ПЕРЕМЕННЫМИ ШАБЛОНОВ =====
+
+@router.get("/api/template-variables")
+async def get_template_variables(request: Request, page: str = None):
+    """Получить все переменные шаблонов из базы данных"""
+    try:
+        from app.utils.template_parser import TemplateParser
+        
+        parser = TemplateParser()
+        variables = parser.get_database_variables(page)
+        
+        return {
+            "success": True,
+            "variables": variables,
+            "total_pages": len(variables),
+            "total_variables": sum(len(page_vars) for page_vars in variables.values())
+        }
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения переменных шаблонов: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get template variables")
+
+
+@router.post("/api/sync-template-variables")
+async def sync_template_variables(request: Request):
+    """Синхронизировать переменные шаблонов с базой данных"""
+    try:
+        from app.utils.template_parser import TemplateParser
+        from app.site.config import get_supported_languages
+        
+        parser = TemplateParser()
+        supported_languages = get_supported_languages()
+        results = parser.sync_variables_to_database(supported_languages)
+        
+        return {
+            "success": True,
+            "message": "Template variables synchronized successfully",
+            "results": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Ошибка синхронизации переменных шаблонов: {e}")
+        raise HTTPException(status_code=500, detail="Failed to sync template variables")
+
+
+@router.get("/api/missing-variables")
+async def get_missing_variables(request: Request):
+    """Получить переменные, которые есть в шаблонах, но отсутствуют в БД"""
+    try:
+        from app.utils.template_parser import TemplateParser
+        from app.site.config import get_supported_languages
+        
+        parser = TemplateParser()
+        supported_languages = get_supported_languages()
+        missing = parser.get_missing_variables(supported_languages)
+        
+        return {
+            "success": True,
+            "missing_variables": missing,
+            "total_missing": sum(len(vars) for vars in missing.values())
+        }
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения отсутствующих переменных: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get missing variables")
+
+
+@router.get("/api/template-analysis")
+async def get_template_analysis(request: Request):
+    """Получить анализ шаблонов - найденные переменные, проблемы синтаксиса"""
+    try:
+        from app.utils.template_parser import TemplateParser
+        from pathlib import Path
+        
+        parser = TemplateParser()
+        
+        # Парсим все шаблоны
+        template_variables = parser.parse_all_templates()
+        
+        # Анализируем каждый шаблон
+        analysis = {}
+        public_templates = Path("app/templates/public")
+        
+        if public_templates.exists():
+            for template_file in public_templates.glob("*.html"):
+                page = parser.get_page_from_path(str(template_file))
+                variables = parser.extract_variables_from_file(str(template_file))
+                syntax_issues = parser.validate_template_syntax(str(template_file))
+                
+                analysis[page] = {
+                    "file": str(template_file),
+                    "variables": list(variables),
+                    "syntax_issues": syntax_issues,
+                    "has_issues": bool(syntax_issues['unclosed_tags'] or syntax_issues['invalid_syntax'])
+                }
+        
+        return {
+            "success": True,
+            "analysis": analysis,
+            "total_templates": len(analysis),
+            "total_variables": sum(len(data['variables']) for data in analysis.values())
+        }
+        
+    except Exception as e:
+        logger.error(f"Ошибка анализа шаблонов: {e}")
+        raise HTTPException(status_code=500, detail="Failed to analyze templates")
+
+
+# ===== API для работы с переводами =====
+
+@router.get("/api/translations")
+async def get_translations(
+    module: str, 
+    lang: str = None,
+    request: Request = None,
+    current_user: Dict[str, Any] = Depends(get_current_user_dependency)
+):
+    """Получить переводы для указанного модуля и языка"""
+    try:
+        # Если язык не указан, получаем из запроса
+        if not lang:
+            lang = get_language_from_request(request)
+        
+        # Валидация модулей
+        valid_modules = ["cms_users", "cms_texts", "cms_images", "cms_seo", "cms_template_variables", "header"]
+        if module not in valid_modules:
+            return {"success": False, "message": f"Недопустимый модуль. Доступные: {', '.join(valid_modules)}"}
+        
+        # Получаем переводы для модуля
+        if module == "cms_users":
+            translations = get_cms_users_translations(lang)
+        elif module == "cms_texts":
+            translations = get_cms_texts_translations(lang)
+        elif module == "cms_images":
+            translations = get_cms_images_translations(lang)
+        elif module == "cms_seo":
+            translations = get_cms_seo_translations(lang)
+        elif module == "cms_template_variables":
+            translations = get_cms_template_variables_translations(lang)
+        elif module == "header":
+            translations = get_header_translations(lang)
+        
+        return {
+            "success": True,
+            "translations": translations,
+            "module": module,
+            "lang": lang
+        }
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения переводов: {e}")
+        return {"success": False, "message": "Ошибка получения переводов"}
 

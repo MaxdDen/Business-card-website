@@ -33,6 +33,21 @@ async def lifespan(app: FastAPI):
     # Проверяем и создаем администратора
     ensure_admin_user_exists()
     
+    # Автоматический парсинг переменных шаблонов при запуске
+    try:
+        from app.utils.template_parser import TemplateParser
+        from app.site.config import get_supported_languages
+        
+        parser = TemplateParser()
+        supported_languages = get_supported_languages()
+        results = parser.sync_variables_to_database(supported_languages)
+        
+        logging.info(f"Template parser sync results: {results}")
+        logging.info(f"Parsed {results['parsed_pages']} pages, added {results['added_variables']} variables, skipped {results['skipped_variables']}, errors: {results['errors']}")
+        
+    except Exception as e:
+        logging.error(f"Ошибка при автоматическом парсинге шаблонов: {e}")
+    
     yield
 
 app = FastAPI(title="Business Card CMS", lifespan=lifespan)

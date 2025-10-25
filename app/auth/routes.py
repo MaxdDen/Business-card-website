@@ -70,9 +70,11 @@ def get_cms_redirect_url(lang: str) -> str:
     
     default_lang = get_default_language()
     
-    # НОВАЯ СТРУКТУРА: домен → язык → страница
-    # Все языки должны иметь префиксы для консистентности
-    return f"/{lang}/cms/"
+    # Для языка по умолчанию не добавляем префикс
+    if lang == default_lang:
+        return "/cms/"
+    else:
+        return f"/{lang}/cms/"
 
 
 def get_login_translations(lang: str) -> Dict[str, str]:
@@ -115,7 +117,7 @@ async def login_form(request: Request):
     language_urls = get_language_urls_from_request(request)
     
     # Получаем URL для редиректа после логина
-    next_url = request.query_params.get("next", f"/{lang}/cms/")
+    next_url = request.query_params.get("next", get_cms_redirect_url(lang))
     
     # Получаем переводы для логина и header
     translations = get_login_translations(lang)
@@ -130,7 +132,7 @@ async def login_form(request: Request):
         "next_url": next_url,
         "t": translations
     }
-    return templates.TemplateResponse("login.html", add_template_functions(context))
+    return templates.TemplateResponse("crm/login.html", add_template_functions(context))
 
 # Языковые роуты для логина
 @router.get("/ru/login")
@@ -174,13 +176,7 @@ async def login(request: Request, response: Response, email: str = Form(...), pa
     translations.update(header_translations)
     
     # Получаем URL для редиректа после логина
-    next_url = request.query_params.get("next", f"/{lang}/cms/")
-
-    print(f"Подготовка контекста: lang : {lang}")
-    print(f"Подготовка контекста: supported_languages : {supported_languages}")
-    print(f"Подготовка контекста: language_urls : {language_urls}")
-    print(f"Подготовка контекста: translations : {translations}")
-    print(f"Подготовка контекста: header_translations : {header_translations}")
+    next_url = request.query_params.get("next", get_cms_redirect_url(lang))
 
     # validate email
     try:
@@ -195,7 +191,7 @@ async def login(request: Request, response: Response, email: str = Form(...), pa
             "next_url": next_url,
             "t": translations
         }
-        return templates.TemplateResponse("login.html", add_template_functions(context), status_code=400)
+        return templates.TemplateResponse("crm/login.html", add_template_functions(context), status_code=400)
 
     # validate password length
     if len(password) < 8:
@@ -208,7 +204,7 @@ async def login(request: Request, response: Response, email: str = Form(...), pa
             "next_url": next_url,
             "t": translations
         }
-        return templates.TemplateResponse("login.html", add_template_functions(context), status_code=400)
+        return templates.TemplateResponse("crm/login.html", add_template_functions(context), status_code=400)
     if len(password.encode('utf-8')) > 72:
         context = {
             "request": request, 
@@ -219,7 +215,7 @@ async def login(request: Request, response: Response, email: str = Form(...), pa
             "next_url": next_url,
             "t": translations
         }
-        return templates.TemplateResponse("login.html", add_template_functions(context), status_code=400)
+        return templates.TemplateResponse("crm/login.html", add_template_functions(context), status_code=400)
 
     user = _get_user_by_email(email)
     if not user:
@@ -235,7 +231,7 @@ async def login(request: Request, response: Response, email: str = Form(...), pa
             "next_url": next_url,
             "t": translations
         }
-        return templates.TemplateResponse("login.html", add_template_functions(context), status_code=401)
+        return templates.TemplateResponse("crm/login.html", add_template_functions(context), status_code=401)
     
     import logging
     logger = logging.getLogger(__name__)
@@ -253,7 +249,7 @@ async def login(request: Request, response: Response, email: str = Form(...), pa
             "next_url": next_url,
             "t": translations
         }
-        return templates.TemplateResponse("login.html", add_template_functions(context), status_code=401)
+        return templates.TemplateResponse("crm/login.html", add_template_functions(context), status_code=401)
 
     token = create_access_token(subject=str(user["id"]), role=user["role"])
     # Используем сохраненный URL для редиректа или дефолтный
@@ -306,7 +302,7 @@ async def register_form(request: Request):
         "language_urls": language_urls,
         "t": translations
     }
-    return templates.TemplateResponse("register.html", add_template_functions(context))
+    return templates.TemplateResponse("crm/register.html", add_template_functions(context))
 
 # Языковые роуты для регистрации
 @router.get("/ru/register")
@@ -357,7 +353,7 @@ async def register(request: Request, email: str = Form(...), password: str = For
             "language_urls": language_urls,
             "t": translations
         }
-        return templates.TemplateResponse("register.html", add_template_functions(context), status_code=400)
+        return templates.TemplateResponse("crm/register.html", add_template_functions(context), status_code=400)
 
     # validate password
     if len(password) < 8:
@@ -369,7 +365,7 @@ async def register(request: Request, email: str = Form(...), password: str = For
             "language_urls": language_urls,
             "t": translations
         }
-        return templates.TemplateResponse("register.html", add_template_functions(context), status_code=400)
+        return templates.TemplateResponse("crm/register.html", add_template_functions(context), status_code=400)
     if len(password.encode('utf-8')) > 72:
         context = {
             "request": request, 
@@ -379,7 +375,7 @@ async def register(request: Request, email: str = Form(...), password: str = For
             "language_urls": language_urls,
             "t": translations
         }
-        return templates.TemplateResponse("register.html", add_template_functions(context), status_code=400)
+        return templates.TemplateResponse("crm/register.html", add_template_functions(context), status_code=400)
     if password != confirm_password:
         context = {
             "request": request, 
@@ -389,7 +385,7 @@ async def register(request: Request, email: str = Form(...), password: str = For
             "language_urls": language_urls,
             "t": translations
         }
-        return templates.TemplateResponse("register.html", add_template_functions(context), status_code=400)
+        return templates.TemplateResponse("crm/register.html", add_template_functions(context), status_code=400)
 
     # check unique
     existing = _get_user_by_email(email)
@@ -402,7 +398,7 @@ async def register(request: Request, email: str = Form(...), password: str = For
             "language_urls": language_urls,
             "t": translations
         }
-        return templates.TemplateResponse("register.html", add_template_functions(context), status_code=400)
+        return templates.TemplateResponse("crm/register.html", add_template_functions(context), status_code=400)
 
     # store bcrypt hash
     try:
@@ -419,7 +415,7 @@ async def register(request: Request, email: str = Form(...), password: str = For
             "language_urls": language_urls,
             "t": translations
         }
-        return templates.TemplateResponse("register.html", add_template_functions(context), status_code=500)
+        return templates.TemplateResponse("crm/register.html", add_template_functions(context), status_code=500)
     
     try:
         user_id = execute(
@@ -435,7 +431,7 @@ async def register(request: Request, email: str = Form(...), password: str = For
             "language_urls": language_urls,
             "t": translations
         }
-        return templates.TemplateResponse("register.html", add_template_functions(context), status_code=500)
+        return templates.TemplateResponse("crm/register.html", add_template_functions(context), status_code=500)
 
     # auto login
     token = create_access_token(subject=str(user_id), role="editor")

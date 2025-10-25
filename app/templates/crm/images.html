@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "crm/base.html" %}
 
 {% block title %}{{ t.title or 'Image Management - CMS' }}{% endblock %}
 
@@ -15,22 +15,6 @@
                     </p>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <!-- Language Switcher -->
-                    <div class="flex items-center space-x-2">
-                        {% for supported_lang in supported_languages %}
-                        <button onclick="switchLanguage('{{ supported_lang }}')"
-                                data-language-button="{{ supported_lang }}"
-                                class="px-3 py-1 text-sm rounded-md transition-colors
-                                       {% if supported_lang == lang %}
-                                       bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
-                                       {% else %}
-                                       text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200
-                                       {% endif %}">
-                            {{ supported_lang|upper }}
-                        </button>
-                        {% endfor %}
-                    </div>
-                    
                     <a href="{{ get_cms_dashboard_url(lang) }}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                         {{ t.back_to_dashboard or '← Back to Dashboard' }}
                     </a>
