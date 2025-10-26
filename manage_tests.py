@@ -122,6 +122,38 @@ AVAILABLE_TESTS = {
         "file": "test_template_variables_structure.py",
         "description": "Тест исправленной структуры template_variables"
     },
+    "refactored_variables": {
+        "file": "test_refactored_variables.py",
+        "description": "Тест переделанных переменных в новом формате"
+    },
+    "dynamic_fields": {
+        "file": "test_dynamic_fields.py",
+        "description": "Тест динамического наполнения полей"
+    },
+    "dynamic_save": {
+        "file": "test_dynamic_save.py",
+        "description": "Тест сохранения динамических полей"
+    },
+    "public_dynamic": {
+        "file": "test_public_dynamic_fields.py",
+        "description": "Тест динамических полей на публичных страницах"
+    },
+    "images_multilang_fix": {
+        "file": "test_images_multilang_fix.py",
+        "description": "Тест исправления мультиязычности на странице изображений"
+    },
+    "image_paths_fix": {
+        "file": "test_image_paths_fix.py",
+        "description": "Тест исправления путей к изображениям"
+    },
+    "full_sync": {
+        "file": "test_full_sync.py",
+        "description": "Тест полной синхронизации переменных"
+    },
+    "dynamic_images_seo": {
+        "file": "test_dynamic_images_seo.py",
+        "description": "Тест динамических изображений и SEO"
+    },
     "session_expiry": {
         "file": "test_session_expiry.py",
         "description": "Тест функциональности истечения сессии"

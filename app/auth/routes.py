@@ -10,7 +10,7 @@ from app.auth.security import create_access_token, verify_password, hash_passwor
 from app.auth.security_headers import set_secure_cookie, delete_secure_cookie
 from app.database.db import query_one, execute
 from email_validator import validate_email, EmailNotValidError
-from app.site.middleware import get_language_from_request, get_supported_languages_from_request, get_language_urls_from_request, get_cms_url, get_cms_dashboard_url
+from app.site.middleware import get_language_from_request, get_supported_languages_from_request, get_language_urls_from_request, get_cms_url
 
 
 router = APIRouter()
@@ -19,8 +19,7 @@ templates = Jinja2Templates(directory="app/templates")
 def add_template_functions(context: dict) -> dict:
     """Добавить глобальные функции в контекст шаблона"""
     context.update({
-        "get_cms_url": get_cms_url,
-        "get_cms_dashboard_url": get_cms_dashboard_url
+        "get_cms_url": get_cms_url
     })
     return context
 

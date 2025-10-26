@@ -4,10 +4,10 @@
 <!-- Hero Section -->
 <section class="relative min-h-screen flex items-center justify-center overflow-hidden">
     <!-- Background Image -->
-    {% if background %}
+    {% if images.background %}
     <div class="absolute inset-0 z-0">
-        <img src="/{{ background.path }}" 
-             alt="Background" 
+        <img src="/uploads/{{ images.background }}" 
+             alt="{{ images.background_alt or 'Background' }}" 
              class="w-full h-full object-cover">
         <div class="absolute inset-0 bg-black bg-opacity-50"></div>
     </div>
@@ -16,7 +16,7 @@
     <!-- Content -->
     <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight">
-            {{ texts.title or 'Добро пожаловать' }}
+            {{ texts.title }}
         </h1>
         
         {% if texts.subtitle %}
@@ -41,25 +41,58 @@
 </section>
 
 <!-- Slider Section -->
-{% if slider_images %}
+{% if images.slider1 or images.slider2 or images.slider3 or images.slider4 %}
 <section class="py-12 sm:py-16 bg-white dark:bg-gray-800">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 text-gray-900 dark:text-white">
-            {% if lang == 'ru' %}Наши работы{% elif lang == 'en' %}Our Works{% else %}Наші роботи{% endif %}
+            {{ texts.our_works }}
         </h2>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-            {% for image in slider_images %}
+            {% if images.slider1 %}
             <div class="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                <img src="/{{ image.path }}" 
-                     alt="Slider image {{ loop.index }}"
+                <img src="/uploads/{{ images.slider1 }}" 
+                     alt="{{ images.slider1_alt or 'Slider image 1' }}"
                      class="w-full h-48 sm:h-56 lg:h-64 object-cover group-hover:scale-105 transition-transform duration-300">
                 <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div class="absolute bottom-4 left-4 right-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <p class="text-sm font-medium">Изображение {{ loop.index }}</p>
+                    <p class="text-sm font-medium">{{ images.slider1_alt or 'Изображение 1' }}</p>
                 </div>
             </div>
-            {% endfor %}
+            {% endif %}
+            {% if images.slider2 %}
+            <div class="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                <img src="/uploads/{{ images.slider2 }}" 
+                     alt="{{ images.slider2_alt or 'Slider image 2' }}"
+                     class="w-full h-48 sm:h-56 lg:h-64 object-cover group-hover:scale-105 transition-transform duration-300">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="absolute bottom-4 left-4 right-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <p class="text-sm font-medium">{{ images.slider2_alt or 'Изображение 2' }}</p>
+                </div>
+            </div>
+            {% endif %}
+            {% if images.slider3 %}
+            <div class="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                <img src="/uploads/{{ images.slider3 }}" 
+                     alt="{{ images.slider3_alt or 'Slider image 3' }}"
+                     class="w-full h-48 sm:h-56 lg:h-64 object-cover group-hover:scale-105 transition-transform duration-300">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="absolute bottom-4 left-4 right-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <p class="text-sm font-medium">{{ images.slider3_alt or 'Изображение 3' }}</p>
+                </div>
+            </div>
+            {% endif %}
+            {% if images.slider4 %}
+            <div class="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                <img src="/uploads/{{ images.slider4 }}" 
+                     alt="{{ images.slider4_alt or 'Slider image 4' }}"
+                     class="w-full h-48 sm:h-56 lg:h-64 object-cover group-hover:scale-105 transition-transform duration-300">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="absolute bottom-4 left-4 right-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <p class="text-sm font-medium">{{ images.slider4_alt or 'Изображение 4' }}</p>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </section>
@@ -69,12 +102,16 @@
 <section class="py-16 bg-gray-50 dark:bg-gray-900">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-12">
+            {% if texts.why_choose_us %}
             <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                {% if lang == 'ru' %}Почему выбирают нас{% elif lang == 'en' %}Why Choose Us{% else %}Чому обирають нас{% endif %}
+                {{ texts.why_choose_us }}
             </h2>
+            {% endif %}
+            {% if texts.we_offer_quality_solutions_for_your_business %}
             <p class="text-lg text-gray-600 dark:text-gray-400">
-                {% if lang == 'ru' %}Мы предлагаем качественные решения для вашего бизнеса{% elif lang == 'en' %}We offer quality solutions for your business{% else %}Ми пропонуємо якісні рішення для вашого бізнесу{% endif %}
+                {{ texts.we_offer_quality_solutions_for_your_business }}
             </p>
+            {% endif %}
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -85,10 +122,10 @@
                     </svg>
                 </div>
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    {% if lang == 'ru' %}Быстро{% elif lang == 'en' %}Fast{% else %}Швидко{% endif %}
+                    {{ texts.fast }}
                 </h3>
                 <p class="text-gray-600 dark:text-gray-400">
-                    {% if lang == 'ru' %}Быстрая доставка и обработка заказов{% elif lang == 'en' %}Fast delivery and order processing{% else %}Швидка доставка та обробка замовлень{% endif %}
+                    {{ texts.fast_delivery_and_order_processing }}
                 </p>
             </div>
             
@@ -99,26 +136,32 @@
                     </svg>
                 </div>
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    {% if lang == 'ru' %}Качественно{% elif lang == 'en' %}Quality{% else %}Якісно{% endif %}
+                    {{ texts.quality }}
                 </h3>
                 <p class="text-gray-600 dark:text-gray-400">
-                    {% if lang == 'ru' %}Только качественные товары и услуги{% elif lang == 'en' %}Only quality products and services{% else %}Тільки якісні товари та послуги{% endif %}
+                    {{ texts.quality_products_and_services }}
                 </p>
             </div>
             
+            {% if texts.reliable %}
             <div class="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
                 <div class="w-16 h-16 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mx-auto mb-4">
                     <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
                     </svg>
                 </div>
+                {% if texts.reliable %}
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    {% if lang == 'ru' %}Надежно{% elif lang == 'en' %}Reliable{% else %}Надійно{% endif %}
+                    {{ texts.reliable }}
                 </h3>
+                {% endif %}
+                {% if texts.reliable_partner_for_your_business %}
                 <p class="text-gray-600 dark:text-gray-400">
-                    {% if lang == 'ru' %}Надежный партнер для вашего бизнеса{% elif lang == 'en' %}Reliable partner for your business{% else %}Надійний партнер для вашого бізнесу{% endif %}
+                    {{ texts.reliable_partner_for_your_business }}
                 </p>
+                {% endif %}
             </div>
+                {% endif %}
         </div>
     </div>
 </section>

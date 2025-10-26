@@ -77,18 +77,19 @@ function switchLanguage(language) {
  * Получить чистый путь без языкового префикса
  */
 function getCleanPath(path) {
-    const supportedLanguages = window.supportedLanguages || ['en', 'ru', 'ua'];
+    // Используем глобальные переменные из global-vars.js
+    const languages = window.supportedLanguages || ['en', 'ru', 'ua'];
     const defaultLanguage = window.defaultLanguage || 'en';
     
     // Debug logging
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         console.log('getCleanPath input:', path);
-        console.log('supportedLanguages:', supportedLanguages);
+        console.log('supportedLanguages:', languages);
         console.log('defaultLanguage:', defaultLanguage);
     }
     
     // Исключаем дефолтный язык из проверки
-    const nonDefaultLanguages = supportedLanguages.filter(lang => lang !== defaultLanguage);
+    const nonDefaultLanguages = languages.filter(lang => lang !== defaultLanguage);
     
     for (const lang of nonDefaultLanguages) {
         if (path.startsWith(`/${lang}/`)) {
@@ -101,6 +102,7 @@ function getCleanPath(path) {
         }
     }
     
+    // Если префикс языка не найден, возвращаем исходный путь
     console.log('No language prefix found, returning original path:', path);
     return path;
 }
@@ -134,35 +136,12 @@ function initLanguageSwitcher() {
 }
 
 /**
- * Get current language from URL or cookie
- * Получить текущий язык из URL или cookie
- */
-function getCurrentLanguage() {
-    // First try to get from URL
-    const path = window.location.pathname;
-    const match = path.match(/^\/([a-z]{2})(?:\/|$)/);
-    if (match) {
-        return match[1];
-    }
-    
-    // Fallback to cookie
-    const cookies = document.cookie.split(';');
-    for (const cookie of cookies) {
-        const [name, value] = cookie.trim().split('=');
-        if (name === 'user_language') {
-            return value;
-        }
-    }
-    
-    return 'en'; // Default language
-}
-
-/**
  * Highlight current language in switcher
  * Выделить текущий язык в переключателе
  */
 function highlightCurrentLanguage() {
-    const currentLang = getCurrentLanguage();
+    // Используем глобальную переменную из global-vars.js
+    const currentLang = window.currentLanguage || getCurrentLanguageFromUrl();
     const languageElements = document.querySelectorAll('[data-language-switch], [data-language-button]');
     
     languageElements.forEach(element => {
@@ -184,10 +163,19 @@ function highlightCurrentLanguage() {
  * Инициализация при готовности DOM
  */
 document.addEventListener('DOMContentLoaded', function() {
-    initLanguageSwitcher();
-    highlightCurrentLanguage();
+    // Ждем загрузки глобальных переменных
+    if (window.supportedLanguages) {
+        // Переменные уже загружены
+        initLanguageSwitcher();
+        highlightCurrentLanguage();
+    } else {
+        // Ждем события загрузки глобальных переменных
+        window.addEventListener('globalVariablesLoaded', function() {
+            initLanguageSwitcher();
+            highlightCurrentLanguage();
+        }, { once: true });
+    }
 });
 
 // Export functions for global use
 window.switchLanguage = switchLanguage;
-window.getCurrentLanguage = getCurrentLanguage;

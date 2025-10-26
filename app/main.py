@@ -11,9 +11,10 @@ from app.auth.security_headers import SecurityHeadersMiddleware
 from app.auth.routes import router as auth_router
 from app.cms.routes import router as cms_router
 from app.site.routes import router as site_router
-from app.site.middleware import LanguageMiddleware, get_cms_url, get_cms_dashboard_url
+from app.site.middleware import LanguageMiddleware, get_cms_url
 from dotenv import load_dotenv
 from app.database.db import ensure_database_initialized, smoke_test, ensure_admin_user_exists
+from app.api.routes import router as api_router
 
 load_dotenv()
 
@@ -40,10 +41,12 @@ async def lifespan(app: FastAPI):
         
         parser = TemplateParser()
         supported_languages = get_supported_languages()
-        results = parser.sync_variables_to_database(supported_languages)
         
-        logging.info(f"Template parser sync results: {results}")
-        logging.info(f"Parsed {results['parsed_pages']} pages, added {results['added_variables']} variables, skipped {results['skipped_variables']}, errors: {results['errors']}")
+        # Используем полную синхронизацию для удаления неиспользуемых полей
+        results = parser.full_sync_variables_to_database(supported_languages)
+        
+        logging.info(f"Template parser full sync results: {results}")
+        logging.info(f"Parsed {results['parsed_pages']} pages, added {results['added_variables']} variables, removed {results['removed_variables']} variables, skipped {results['skipped_variables']}, errors: {results['errors']}")
         
     except Exception as e:
         logging.error(f"Ошибка при автоматическом парсинге шаблонов: {e}")
@@ -56,6 +59,7 @@ app.add_middleware(CSRFMiddleware)
 app.add_middleware(AuthRedirectMiddleware)
 app.add_middleware(LanguageMiddleware)
 app.include_router(auth_router)
+app.include_router(api_router, prefix="/api")
 # CMS роуты доступны через языковые префиксы: /{lang}/cms/...
 # Создаем отдельные роуты для каждого языка
 from app.site.config import get_supported_languages, get_default_language
@@ -77,12 +81,13 @@ app.include_router(site_router)
 # Static and templates
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/uploads/originals", StaticFiles(directory="uploads/originals"), name="uploads_originals")
+app.mount("/uploads/optimized", StaticFiles(directory="uploads/optimized"), name="uploads_optimized")
 templates = Jinja2Templates(directory="app/templates")
 
 # Добавляем глобальные функции в контекст шаблонов
 templates.env.globals.update({
-    "get_cms_url": get_cms_url,
-    "get_cms_dashboard_url": get_cms_dashboard_url
+    "get_cms_url": get_cms_url
 })
 
 @app.get("/health")

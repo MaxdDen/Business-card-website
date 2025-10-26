@@ -15,7 +15,7 @@
                     </p>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <a href="{{ get_cms_dashboard_url(lang) }}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <a href="{{ get_cms_url('', lang) }}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                         {{ t.back_to_dashboard or '← Back to Dashboard' }}
                     </a>
                 </div>
@@ -102,6 +102,83 @@
                         </svg>
                         {{ t.refresh or 'Refresh' }}
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Фильтры по типам переменных -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow mb-8">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 class="text-lg font-medium text-gray-900 dark:text-white">{{ t.variable_filters or 'Variable Filters' }}</h2>
+            </div>
+            <div class="px-6 py-4">
+                <div class="flex flex-wrap gap-4">
+                    <button id="filter-all" class="filter-btn active bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                        {{ t.all_variables or 'All Variables' }}
+                    </button>
+                    <button id="filter-texts" class="filter-btn bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                        {{ t.text_variables or 'Text Variables' }}
+                    </button>
+                    <button id="filter-images" class="filter-btn bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                        {{ t.image_variables or 'Image Variables' }}
+                    </button>
+                    <button id="filter-seo" class="filter-btn bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                        {{ t.seo_variables or 'SEO Variables' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Переменные по типам -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Text Variables -->
+            <div id="texts-section" class="bg-white dark:bg-gray-800 rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">{{ t.text_variables or 'Text Variables' }}</h3>
+                </div>
+                <div class="p-6">
+                    <div id="texts-content">
+                        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <p class="mt-2">{{ t.click_sync_to_load or 'Click "Sync Variables" to load' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Variables -->
+            <div id="images-section" class="bg-white dark:bg-gray-800 rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">{{ t.image_variables or 'Image Variables' }}</h3>
+                </div>
+                <div class="p-6">
+                    <div id="images-content">
+                        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <p class="mt-2">{{ t.click_sync_to_load or 'Click "Sync Variables" to load' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEO Variables -->
+            <div id="seo-section" class="bg-white dark:bg-gray-800 rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">{{ t.seo_variables or 'SEO Variables' }}</h3>
+                </div>
+                <div class="p-6">
+                    <div id="seo-content">
+                        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                            <p class="mt-2">{{ t.click_sync_to_load or 'Click "Sync Variables" to load' }}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

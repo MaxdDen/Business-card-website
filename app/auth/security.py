@@ -10,9 +10,6 @@ import logging
 # Настраиваем логирование для отладки
 logger = logging.getLogger(__name__)
 
-# Используем только bcrypt для хеширования паролей по best practices
-logger.info("Using bcrypt for password hashing")
-
 
 def hash_password(plain_password: str) -> str:
     """Хэширование пароля с использованием bcrypt по best practices"""
@@ -21,14 +18,12 @@ def hash_password(plain_password: str) -> str:
         password_bytes = plain_password.encode('utf-8')
         if len(password_bytes) > 72:
             password_bytes = password_bytes[:72]
-            logger.info(f"Password truncated to 72 bytes for bcrypt compatibility")
         
         # Генерируем соль и хэшируем пароль с помощью bcrypt
         salt = bcrypt.gensalt()
         password_hash = bcrypt.hashpw(password_bytes, salt)
         
         result = password_hash.decode('utf-8')
-        logger.info(f"Password hashed successfully with bcrypt: {result[:20]}...")
         return result
         
     except Exception as e:
@@ -43,13 +38,11 @@ def verify_password(plain_password: str, password_hash: str) -> bool:
         password_bytes = plain_password.encode('utf-8')
         if len(password_bytes) > 72:
             password_bytes = password_bytes[:72]
-            logger.info(f"Password truncated to 72 bytes for bcrypt verification")
         
         # Проверяем пароль с помощью bcrypt
         stored_hash_bytes = password_hash.encode('utf-8')
         result = bcrypt.checkpw(password_bytes, stored_hash_bytes)
         
-        logger.info(f"Password verification result: {result}")
         return result
         
     except Exception as e:
@@ -92,6 +85,7 @@ def get_current_user(request) -> Dict[str, Any]:
     from fastapi.responses import RedirectResponse
     
     token = request.cookies.get("access_token")
+    
     if not token:
         raise HTTPException(status_code=401, detail="Требуется авторизация")
     

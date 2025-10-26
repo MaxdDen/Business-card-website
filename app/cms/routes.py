@@ -4,8 +4,8 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from app.auth.security import get_current_user, create_access_token, decode_token
 from app.database.db import query_one, query_all, execute
 from app.utils.cache import text_cache, image_cache
-from app.site.middleware import get_language_from_request, get_supported_languages_from_request, get_language_urls_from_request, get_cms_url, get_cms_dashboard_url
-from app.site.config import get_default_language
+from app.site.middleware import get_language_from_request, get_supported_languages_from_request, get_language_urls_from_request, get_cms_url
+from app.site.config import get_default_language, get_supported_languages
 from app.site.routes import get_text
 from app.utils.images import (
     validate_image_file, optimize_image, save_original_image, 
@@ -17,7 +17,10 @@ import logging
 import json
 import os
 import io
+import uuid
 from datetime import datetime, timezone
+from pathlib import Path
+from app.site.config import get_supported_languages
 
 router = APIRouter(tags=["cms"])
 templates = Jinja2Templates(directory="app/templates")
@@ -28,6 +31,85 @@ logger = logging.getLogger(__name__)
 def get_current_user_dependency(request: Request) -> Dict[str, Any]:
     """Зависимость для получения текущего пользователя"""
     return get_current_user(request)
+
+
+def get_all_images_for_template(lang: str = get_default_language()) -> Dict[str, str]:
+    """
+    Получить все переменные изображений для шаблона
+    
+    Args:
+        lang: язык для alt-текстов
+    
+    Returns:
+        Словарь с переменными изображений
+    """
+    try:
+        # Получаем изображения с alt-текстами
+        logo = query_one(
+            """SELECT i.path, ia.alt_text 
+               FROM images i 
+               LEFT JOIN images_alts ia ON i.id = ia.image_id AND ia.lang = ?
+               WHERE i.type = 'logo' 
+               ORDER BY i."order" LIMIT 1""",
+            (lang,)
+        )
+        
+        background = query_one(
+            """SELECT i.path, ia.alt_text 
+               FROM images i 
+               LEFT JOIN images_alts ia ON i.id = ia.image_id AND ia.lang = ?
+               WHERE i.type = 'background' 
+               ORDER BY i."order" LIMIT 1""",
+            (lang,)
+        )
+        
+        favicon = query_one(
+            """SELECT i.path, ia.alt_text 
+               FROM images i 
+               LEFT JOIN images_alts ia ON i.id = ia.image_id AND ia.lang = ?
+               WHERE i.type = 'favicon' 
+               ORDER BY i."order" LIMIT 1""",
+            (lang,)
+        )
+        
+        # Получаем слайдер изображения
+        slider_images = query_all(
+            """SELECT i.path, ia.alt_text, i."order"
+               FROM images i 
+               LEFT JOIN images_alts ia ON i.id = ia.image_id AND ia.lang = ?
+               WHERE i.type = 'slider' 
+               ORDER BY i."order" LIMIT 4""",
+            (lang,)
+        )
+        
+        # Формируем словарь переменных
+        images = {}
+        
+        # Основные изображения
+        images["logo"] = logo.get("path", "") if logo else ""
+        images["logo_alt"] = logo.get("alt_text", "") if logo else ""
+        
+        images["background"] = background.get("path", "") if background else ""
+        images["background_alt"] = background.get("alt_text", "") if background else ""
+        
+        images["favicon"] = favicon.get("path", "") if favicon else ""
+        images["favicon_alt"] = favicon.get("alt_text", "") if favicon else ""
+        
+        # Слайдер изображения
+        for i, slider_img in enumerate(slider_images, 1):
+            images[f"slider{i}"] = slider_img.get("path", "")
+            images[f"slider{i}_alt"] = slider_img.get("alt_text", "")
+        
+        # Заполняем пустые слоты слайдера
+        for i in range(len(slider_images) + 1, 5):
+            images[f"slider{i}"] = ""
+            images[f"slider{i}_alt"] = ""
+        
+        return images
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения переменных изображений: {e}")
+        return {}
 
 
 # Используем общие функции хеширования из app.auth.security
@@ -196,6 +278,44 @@ def get_cms_template_variables_translations(lang: str) -> Dict[str, str]:
     return translations
 
 
+def get_cms_dynamic_images_translations(lang: str) -> Dict[str, str]:
+    """Получить переводы для CMS Dynamic Images Manager"""
+    translations = {}
+    
+    translation_keys = [
+        'title', 'subtitle', 'back_to_dashboard', 'dynamic_images', 'management',
+        'total_pages', 'total_variables', 'total_images', 'sync', 'refresh',
+        'sync_images', 'refresh_data', 'sync_success', 'sync_error', 'load_error',
+        'no_variables', 'no_images', 'image_variables', 'images_info', 'page',
+        'variables_count', 'images_count', 'file', 'variables', 'sync_completed',
+        'sync_loading', 'sync_button', 'refresh_button', 'sync_images_desc', 'refresh_data_desc'
+    ]
+    
+    for key in translation_keys:
+        translations[key] = get_text('cms_dynamic_images', key, lang)
+    
+    return translations
+
+
+def get_cms_dynamic_seo_translations(lang: str) -> Dict[str, str]:
+    """Получить переводы для CMS Dynamic SEO Manager"""
+    translations = {}
+    
+    translation_keys = [
+        'title', 'subtitle', 'back_to_dashboard', 'dynamic_seo', 'management',
+        'total_pages', 'total_variables', 'total_seo_entries', 'sync', 'refresh',
+        'sync_seo', 'refresh_data', 'sync_success', 'sync_error', 'load_error',
+        'no_variables', 'no_seo_data', 'seo_variables', 'seo_data', 'page',
+        'variables_count', 'seo_entries_count', 'file', 'variables', 'sync_completed',
+        'sync_loading', 'sync_button', 'refresh_button', 'sync_seo_desc', 'refresh_data_desc'
+    ]
+    
+    for key in translation_keys:
+        translations[key] = get_text('cms_dynamic_seo', key, lang)
+    
+    return translations
+
+
 @router.get("/")
 async def dashboard(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
     """Главная панель CMS"""
@@ -219,7 +339,7 @@ async def dashboard(request: Request, current_user: Dict[str, Any] = Depends(get
         if not supported_languages:
             logger.error(f"Supported languages is empty or None for path: {request.url.path}")
             # Создаем список по умолчанию как fallback
-            supported_languages = ["en", "ua", "ru"]
+            supported_languages = get_supported_languages()
         
         # Получаем переводы для Dashboard и Header
         translations = get_dashboard_translations(lang)
@@ -237,8 +357,7 @@ async def dashboard(request: Request, current_user: Dict[str, Any] = Depends(get
                 "supported_languages": supported_languages,
                 "language_urls": language_urls,
                 "t": translations,  # Передаем переводы в шаблон
-                "get_cms_url": get_cms_url,  # Функция для генерации URL
-                "get_cms_dashboard_url": get_cms_dashboard_url  # Функция для дашборда
+                "get_cms_url": get_cms_url  # Функция для генерации URL
             }
         )
     except Exception as e:
@@ -268,15 +387,14 @@ async def texts_editor(request: Request, current_user: Dict[str, Any] = Depends(
             "supported_languages": supported_languages,
             "language_urls": language_urls,
             "t": translations,
-            "get_cms_url": get_cms_url,
-            "get_cms_dashboard_url": get_cms_dashboard_url
+            "get_cms_url": get_cms_url
         }
     )
 
 
 @router.get("/images")
 async def images_manager(request: Request, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
-    """Управление изображениями (заглушка)"""
+    """Управление изображениями"""
     # Получаем язык и настройки мультиязычности
     lang = get_language_from_request(request)
     supported_languages = get_supported_languages_from_request(request)
@@ -287,6 +405,9 @@ async def images_manager(request: Request, current_user: Dict[str, Any] = Depend
     header_translations = get_header_translations(lang)
     translations.update(header_translations)
     
+    # Получаем переменные изображений для шаблона
+    images = get_all_images_for_template(lang)
+    
     return templates.TemplateResponse(
         "crm/images.html",
         {
@@ -296,8 +417,8 @@ async def images_manager(request: Request, current_user: Dict[str, Any] = Depend
             "supported_languages": supported_languages,
             "language_urls": language_urls,
             "t": translations,
-            "get_cms_url": get_cms_url,
-            "get_cms_dashboard_url": get_cms_dashboard_url
+            "images": images,
+            "get_cms_url": get_cms_url
         }
     )
 
@@ -324,10 +445,11 @@ async def seo_manager(request: Request, current_user: Dict[str, Any] = Depends(g
             "supported_languages": supported_languages,
             "language_urls": language_urls,
             "t": translations,
-            "get_cms_url": get_cms_url,
-            "get_cms_dashboard_url": get_cms_dashboard_url
+            "get_cms_url": get_cms_url
         }
     )
+
+
 
 
 @router.get("/users")
@@ -355,8 +477,7 @@ async def users_manager(request: Request, current_user: Dict[str, Any] = Depends
             "supported_languages": supported_languages,
             "language_urls": language_urls,
             "t": translations,
-            "get_cms_url": get_cms_url,
-            "get_cms_dashboard_url": get_cms_dashboard_url
+            "get_cms_url": get_cms_url
         }
     )
 
@@ -383,27 +504,43 @@ async def template_variables_manager(request: Request, current_user: Dict[str, A
             "supported_languages": supported_languages,
             "language_urls": language_urls,
             "t": translations,
-            "get_cms_url": get_cms_url,
-            "get_cms_dashboard_url": get_cms_dashboard_url
+            "get_cms_url": get_cms_url
         }
     )
 
 
-# Многоязычные маршруты для users
-# Языковые алиасы для users удалены - теперь обрабатываются через prefix в main.py
-
-
-# Языковые алиасы удалены - теперь обрабатываются через prefix в main.py
-
-
 # API для работы с текстами
+@router.get("/api/translations")
+async def get_translations(lang: str, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Получить переводы для указанного языка"""
+    try:
+        # Валидация языка
+        valid_langs = get_supported_languages()
+        
+        if lang not in valid_langs:
+            return {"success": False, "message": f"Недопустимый язык. Доступные: {', '.join(valid_langs)}"}
+        
+        # Получаем переводы для CMS Images Manager
+        translations = get_cms_images_translations(lang)
+        
+        return {
+            "success": True,
+            "translations": translations,
+            "lang": lang
+        }
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения переводов: {e}")
+        return {"success": False, "message": "Ошибка получения переводов"}
+
+
 @router.get("/api/texts")
 async def get_texts(page: str, lang: str, current_user: Dict[str, Any] = Depends(get_current_user_dependency)):
     """Получить тексты для указанной страницы и языка"""
     try:
         # Валидация параметров
         valid_pages = ["home", "about", "catalog", "contacts"]
-        valid_langs = ["en", "ua", "ru"]
+        valid_langs = get_supported_languages()
         
         if page not in valid_pages:
             return {"success": False, "message": f"Недопустимая страница. Доступные: {', '.join(valid_pages)}"}
@@ -465,7 +602,7 @@ async def save_texts(request: Request, current_user: Dict[str, Any] = Depends(ge
         
         # Валидация параметров
         valid_pages = ["home", "about", "catalog", "contacts"]
-        valid_langs = ["en", "ua", "ru"]
+        valid_langs = get_supported_languages()
         
         if not page or page not in valid_pages:
             return {"success": False, "message": f"Недопустимая страница. Доступные: {', '.join(valid_pages)}"}
@@ -476,11 +613,35 @@ async def save_texts(request: Request, current_user: Dict[str, Any] = Depends(ge
         if not isinstance(texts, dict):
             return {"success": False, "message": "Тексты должны быть объектом"}
         
-        # Валидация ключей текстов
-        valid_keys = ["title", "subtitle", "description", "cta_text", "phone", "address"]
-        for key in texts.keys():
-            if key not in valid_keys:
-                return {"success": False, "message": f"Недопустимый ключ текста: {key}. Доступные: {', '.join(valid_keys)}"}
+        # Валидация ключей текстов - используем динамические поля из парсера
+        try:
+            from app.utils.template_parser import TemplateParser
+            parser = TemplateParser()
+            all_variables = parser.get_database_variables(page)
+            
+            if page in all_variables:
+                # Получаем все ключи для данной страницы
+                page_variables = all_variables[page]
+                valid_keys = list(page_variables.keys())
+                
+                # Фильтруем только текстовые поля (не SEO)
+                valid_text_keys = [key for key in valid_keys if not key.startswith('meta_')]
+            else:
+                # Fallback на старые ключи, если страница не найдена в парсере
+                valid_text_keys = ["title", "subtitle", "description", "cta_text", "phone", "address"]
+            
+            # Валидация ключей
+            for key in texts.keys():
+                if key not in valid_text_keys:
+                    return {"success": False, "message": f"Недопустимый ключ текста: {key}. Доступные: {', '.join(valid_text_keys)}"}
+                    
+        except Exception as e:
+            logger.warning(f"Ошибка получения динамических ключей для {page}: {e}, используем fallback")
+            # Fallback на старые ключи при ошибке
+            valid_text_keys = ["title", "subtitle", "description", "cta_text", "phone", "address"]
+            for key in texts.keys():
+                if key not in valid_text_keys:
+                    return {"success": False, "message": f"Недопустимый ключ текста: {key}. Доступные: {', '.join(valid_text_keys)}"}
         
         # Сохраняем каждый текст через UPSERT
         for key, value in texts.items():
@@ -593,19 +754,30 @@ async def upload_image_test(
 @router.get("/api/images")
 async def get_images(request: Request, user: Dict[str, Any] = Depends(get_current_user_dependency)):
     """Получить список всех изображений"""
+    logger.info(f"🔍 API /api/images called by user: {user.get('email', 'unknown')}")
+    
     try:
+        logger.info("📊 Querying images from database")
         images = query_all("""
             SELECT id, name, path, original_path, type, "order"
             FROM images 
             ORDER BY type, "order"
         """)
         
-        return {
+        logger.info(f"✅ Found {len(images)} images in database")
+        for img in images:
+            logger.info(f"🖼️ Image: ID={img['id']}, Name={img['name']}, Type={img['type']}, Path={img['path']}")
+        
+        result = {
             "success": True,
             "images": images
         }
+        
+        logger.info(f"📤 Returning {len(images)} images to client")
+        return result
+        
     except Exception as e:
-        logger.error(f"Ошибка получения списка изображений: {e}")
+        logger.error(f"❌ Ошибка получения списка изображений: {e}")
         return {"success": False, "message": "Ошибка получения списка изображений"}
 
 
@@ -634,12 +806,11 @@ async def upload_image(
                 content={"success": False, "message": "Тип изображения не передан"}
             )
         
-        # Проверка типа изображения
-        valid_types = ['logo', 'slider', 'background', 'favicon']
-        if image_type not in valid_types:
+        # Проверка типа изображения (теперь динамическая)
+        if not image_type or not image_type.strip():
             return JSONResponse(
                 status_code=400,
-                content={"success": False, "message": f"Недопустимый тип изображения. Разрешены: {', '.join(valid_types)}"}
+                content={"success": False, "message": "Тип изображения не может быть пустым"}
             )
         
         # Читаем содержимое файла
@@ -696,11 +867,11 @@ async def upload_image(
             (image_type,)
         )["next_order"]
         
-        # Сохраняем информацию в БД
+        # Сохраняем информацию в БД (только имена файлов, без полных путей)
         execute("""
             INSERT INTO images (name, path, original_path, type, "order")
             VALUES (?, ?, ?, ?, ?)
-        """, (unique_filename, optimized_path, original_path, image_type, next_order))
+        """, (unique_filename, os.path.join("optimized", unique_filename.replace(os.path.splitext(unique_filename)[1], '.webp')), os.path.join("originals", unique_filename), image_type, next_order))
         
         # Получаем ID созданной записи
         image_id = query_one("SELECT last_insert_rowid() as id")["id"]
@@ -780,6 +951,139 @@ async def delete_image(
         )
 
 
+@router.post("/api/images/update")
+async def update_existing_image(
+    file: UploadFile = File(...),
+    image_id: int = Form(...),
+    user: Dict[str, Any] = Depends(get_current_user_dependency)
+):
+    """Обновить существующее изображение"""
+    try:
+        logger.info(f"Обновление изображения ID {image_id}: {file.filename}")
+        
+        # Проверяем существование изображения
+        image = query_one("SELECT * FROM images WHERE id = ?", (image_id,))
+        if not image:
+            return JSONResponse(
+                status_code=404,
+                content={"success": False, "message": "Изображение не найдено"}
+            )
+        
+        # Проверяем файл
+        if not file or not file.filename:
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "message": "Файл не передан"}
+            )
+        
+        # Проверяем размер файла (5MB)
+        if file.size and file.size > 5 * 1024 * 1024:
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "message": "Файл слишком большой (максимум 5MB)"}
+            )
+        
+        # Проверяем тип файла
+        if not file.content_type or not file.content_type.startswith('image/'):
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "message": "Неподдерживаемый формат файла"}
+            )
+        
+        # Читаем содержимое файла
+        file_content = await file.read()
+        
+        # Генерируем уникальное имя файла
+        # Всегда используем .webp расширение для оптимизированных файлов
+        unique_filename = f"{uuid.uuid4()}.webp"
+        
+        # Пути для сохранения
+        uploads_dir = Path("uploads")
+        originals_dir = uploads_dir / "originals"
+        optimized_dir = uploads_dir / "optimized"
+        
+        # Создаем директории если не существуют
+        originals_dir.mkdir(parents=True, exist_ok=True)
+        optimized_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Сохраняем оригинальный файл (с оригинальным расширением)
+        original_extension = file.filename.split('.')[-1].lower()
+        original_filename = f"{uuid.uuid4()}.{original_extension}"
+        original_path = originals_dir / original_filename
+        with open(original_path, "wb") as f:
+            f.write(file_content)
+        
+        # Оптимизируем изображение (всегда в .webp)
+        optimized_path = optimized_dir / unique_filename
+        optimize_image(file_content, str(optimized_path))
+        
+        # Обновляем запись в БД
+        execute(
+            "UPDATE images SET name = ?, path = ?, original_path = ? WHERE id = ?",
+            (file.filename, unique_filename, original_filename, image_id)
+        )
+        
+        logger.info(f"Изображение {image_id} обновлено: {unique_filename}")
+        
+        return JSONResponse(
+            status_code=200,
+            content={
+                "success": True, 
+                "message": "Изображение обновлено",
+                "image": {
+                    "id": image_id,
+                    "name": file.filename,
+                    "path": unique_filename,
+                    "original_path": unique_filename
+                }
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Ошибка обновления изображения {image_id}: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": "Ошибка обновления изображения"}
+        )
+
+
+@router.post("/api/images/{image_id}/update")
+async def update_image_record(
+    image_id: int,
+    request: Request,
+    user: Dict[str, Any] = Depends(get_current_user_dependency)
+):
+    """Обновить запись изображения в БД"""
+    try:
+        # Проверяем существование изображения
+        image = query_one("SELECT * FROM images WHERE id = ?", (image_id,))
+        if not image:
+            return JSONResponse(
+                status_code=404,
+                content={"success": False, "message": "Изображение не найдено"}
+            )
+        
+        # Обновляем запись изображения (пока просто обновляем timestamp)
+        execute(
+            "UPDATE images SET created_at = datetime('now') WHERE id = ?",
+            (image_id,)
+        )
+        
+        logger.info(f"Обновлена запись изображения {image_id}")
+        
+        return JSONResponse(
+            status_code=200,
+            content={"success": True, "message": "Запись изображения обновлена"}
+        )
+        
+    except Exception as e:
+        logger.error(f"Ошибка обновления записи изображения {image_id}: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": "Ошибка обновления записи изображения"}
+        )
+
+
 @router.put("/api/images/{image_id}/order")
 async def update_image_order(
     image_id: int,
@@ -823,11 +1127,11 @@ async def get_images_by_type(
 ):
     """Получить изображения по типу"""
     try:
-        valid_types = ['logo', 'slider', 'background', 'favicon']
-        if image_type not in valid_types:
+        # Проверка типа изображения (теперь динамическая)
+        if not image_type or not image_type.strip():
             return JSONResponse(
                 status_code=400,
-                content={"success": False, "message": f"Недопустимый тип изображения. Разрешены: {', '.join(valid_types)}"}
+                content={"success": False, "message": "Тип изображения не может быть пустым"}
             )
         
         images = query_all("""
@@ -850,6 +1154,71 @@ async def get_images_by_type(
         )
 
 
+@router.get("/api/images/{image_id}/alts")
+async def get_image_alts(
+    image_id: int,
+    user: Dict[str, Any] = Depends(get_current_user_dependency)
+):
+    """Получить alt-тексты для изображения"""
+    try:
+        alts = query_all("""
+            SELECT lang, alt_text 
+            FROM images_alts 
+            WHERE image_id = ?
+            ORDER BY lang
+        """, (image_id,))
+        
+        return {
+            "success": True,
+            "alts": {alt["lang"]: alt["alt_text"] for alt in alts}
+        }
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения alt-текстов: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": "Ошибка получения alt-текстов"}
+        )
+
+
+@router.post("/api/images/{image_id}/alts")
+async def save_image_alts(
+    image_id: int,
+    request: Request,
+    user: Dict[str, Any] = Depends(get_current_user_dependency)
+):
+    """Сохранить alt-тексты для изображения"""
+    try:
+        data = await request.json()
+        alts = data.get("alts", {})
+        
+        # Удаляем существующие alt-тексты
+        execute("DELETE FROM images_alts WHERE image_id = ?", (image_id,))
+        
+        # Добавляем новые alt-тексты
+        for lang, alt_text in alts.items():
+            if alt_text.strip():  # Только непустые alt-тексты
+                execute(
+                    "INSERT INTO images_alts (image_id, lang, alt_text) VALUES (?, ?, ?)",
+                    (image_id, lang, alt_text.strip())
+                )
+        
+        # Инвалидируем кэш изображений
+        image_cache.clear()
+        
+        return {
+            "success": True,
+            "message": "Alt-тексты сохранены"
+        }
+        
+    except Exception as e:
+        logger.error(f"Ошибка сохранения alt-текстов: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": "Ошибка сохранения alt-текстов"}
+        )
+
+
 # ===== API для работы с SEO =====
 
 @router.get("/api/seo")
@@ -858,7 +1227,7 @@ async def get_seo(page: str, lang: str, current_user: Dict[str, Any] = Depends(g
     try:
         # Валидация параметров
         valid_pages = ["home", "about", "catalog", "contacts"]
-        valid_langs = ["en", "ua", "ru"]
+        valid_langs = get_supported_languages()
         
         if page not in valid_pages:
             return {"success": False, "message": f"Недопустимая страница. Доступные: {', '.join(valid_pages)}"}
@@ -906,7 +1275,7 @@ async def save_seo(request: Request, current_user: Dict[str, Any] = Depends(get_
         
         # Валидация параметров
         valid_pages = ["home", "about", "catalog", "contacts"]
-        valid_langs = ["en", "ua", "ru"]
+        valid_langs = get_supported_languages()
         
         if not page or page not in valid_pages:
             return {"success": False, "message": f"Недопустимая страница. Доступные: {', '.join(valid_pages)}"}
@@ -964,6 +1333,8 @@ async def save_seo(request: Request, current_user: Dict[str, Any] = Depends(get_
     except Exception as e:
         logger.error(f"Ошибка сохранения SEO данных: {e}")
         return {"success": False, "message": "Ошибка сохранения SEO данных"}
+
+
 
 
 # ==================== УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ ====================
@@ -1205,8 +1576,8 @@ async def template_variables_page(request: Request, current_user: Dict[str, Any]
             "lang": lang,
             "language_urls": language_urls,
             "supported_languages": supported_languages,
-            "cms_url": get_cms_url(request),
-            "cms_dashboard_url": get_cms_dashboard_url(request)
+            "cms_url": get_cms_url("", lang),
+            "cms_dashboard_url": get_cms_url("", lang)
         })
         
     except Exception as e:
@@ -1235,6 +1606,206 @@ async def get_template_variables(request: Request, page: str = None):
     except Exception as e:
         logger.error(f"Ошибка получения переменных шаблонов: {e}")
         raise HTTPException(status_code=500, detail="Failed to get template variables")
+
+
+@router.get("/api/dynamic-fields")
+async def get_dynamic_fields(request: Request, page: str, lang: str, field_type: str = "texts"):
+    """Получить динамические поля для указанной страницы, языка и типа"""
+    try:
+        from app.utils.template_parser import TemplateParser
+        
+        parser = TemplateParser()
+        
+        # Получаем все переменные для страницы
+        all_variables = parser.get_database_variables(page)
+        
+        if page not in all_variables:
+            return {
+                "success": True,
+                "fields": [],
+                "message": f"Переменные для страницы {page} не найдены"
+            }
+        
+        # Фильтруем по типу поля (texts, seo)
+        page_variables = all_variables[page]
+        filtered_fields = {}
+        
+        for key, lang_data in page_variables.items():
+            if field_type == "texts" and not key.startswith("meta_"):
+                # Для текстовых полей исключаем SEO поля
+                filtered_fields[key] = lang_data.get(lang, "")
+            elif field_type == "seo" and key.startswith("meta_"):
+                # Для SEO полей берем только meta_ поля
+                filtered_fields[key] = lang_data.get(lang, "")
+        
+        # Преобразуем в список полей для формы
+        fields = []
+        for key, value in filtered_fields.items():
+            field_info = {
+                "key": key,
+                "value": value,
+                "label": _get_field_label(key),
+                "type": _get_field_type(key),
+                "placeholder": _get_field_placeholder(key),
+                "required": _is_field_required(key)
+            }
+            fields.append(field_info)
+        
+        return {
+            "success": True,
+            "fields": fields,
+            "page": page,
+            "lang": lang,
+            "field_type": field_type
+        }
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения динамических полей: {e}")
+        return {"success": False, "message": f"Ошибка получения полей: {e}"}
+
+
+def _get_field_label(key: str) -> str:
+    """Получить человекочитаемый лейбл для поля"""
+    labels = {
+        "title": "Заголовок",
+        "subtitle": "Подзаголовок", 
+        "description": "Описание",
+        "cta_text": "Текст кнопки",
+        "phone": "Телефон",
+        "address": "Адрес",
+        "email": "Email",
+        "meta_title": "SEO заголовок",
+        "meta_description": "SEO описание",
+        "meta_keywords": "SEO ключевые слова"
+    }
+    return labels.get(key, key.replace("_", " ").title())
+
+
+def _get_field_type(key: str) -> str:
+    """Определить тип поля"""
+    if key in ["description", "address"]:
+        return "textarea"
+    elif key.startswith("meta_"):
+        return "text"
+    else:
+        return "text"
+
+
+def _get_field_placeholder(key: str) -> str:
+    """Получить placeholder для поля"""
+    placeholders = {
+        "title": "Введите заголовок",
+        "subtitle": "Введите подзаголовок",
+        "description": "Введите описание",
+        "cta_text": "Введите текст кнопки",
+        "phone": "Введите номер телефона",
+        "address": "Введите адрес",
+        "email": "Введите email",
+        "meta_title": "SEO заголовок (до 60 символов)",
+        "meta_description": "SEO описание (до 160 символов)",
+        "meta_keywords": "Ключевые слова через запятую"
+    }
+    return placeholders.get(key, f"Введите {key}")
+
+
+def _is_field_required(key: str) -> bool:
+    """Определить обязательность поля"""
+    required_fields = ["title"]
+    return key in required_fields
+
+
+@router.get("/api/image-types")
+async def get_image_types(request: Request, page: str = None):
+    """Получить типы изображений, используемые в шаблонах"""
+    try:
+        from app.utils.template_parser import TemplateParser
+        
+        parser = TemplateParser()
+        
+        # Получаем все переменные для страницы или всех страниц
+        if page:
+            all_variables = parser.get_database_variables(page)
+            if page not in all_variables:
+                return {
+                    "success": True,
+                    "image_types": [],
+                    "message": f"Переменные для страницы {page} не найдены"
+                }
+            page_variables = {page: all_variables[page]}
+        else:
+            page_variables = parser.get_database_variables()
+        
+        # Ищем переменные изображений
+        image_types = set()
+        for page_name, variables in page_variables.items():
+            for key, lang_data in variables.items():
+                if key.startswith("image_") or key in ["logo", "background", "favicon", "slider"]:
+                    # Извлекаем тип изображения
+                    if key.startswith("image_"):
+                        image_type = key.replace("image_", "")
+                    else:
+                        image_type = key
+                    image_types.add(image_type)
+        
+        # Преобразуем в список с метаданными
+        image_types_list = []
+        for img_type in sorted(image_types):
+            metadata = {
+                "type": img_type,
+                "label": _get_image_type_label(img_type),
+                "description": _get_image_type_description(img_type),
+                "max_files": _get_max_files_for_type(img_type)
+            }
+            image_types_list.append(metadata)
+        
+        return {
+            "success": True,
+            "image_types": image_types_list,
+            "page": page
+        }
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения типов изображений: {e}")
+        return {"success": False, "message": f"Ошибка получения типов изображений: {e}"}
+
+
+def _get_image_type_label(img_type: str) -> str:
+    """Получить человекочитаемый лейбл для типа изображения"""
+    labels = {
+        "logo": "Логотип",
+        "slider": "Слайдер",
+        "background": "Фоновое изображение",
+        "favicon": "Иконка сайта",
+        "banner": "Баннер",
+        "gallery": "Галерея"
+    }
+    return labels.get(img_type, img_type.replace("_", " ").title())
+
+
+def _get_image_type_description(img_type: str) -> str:
+    """Получить описание для типа изображения"""
+    descriptions = {
+        "logo": "Логотип компании, отображается в шапке сайта",
+        "slider": "Изображения для слайдера на главной странице",
+        "background": "Фоновые изображения для секций",
+        "favicon": "Иконка сайта, отображается во вкладке браузера",
+        "banner": "Рекламные баннеры",
+        "gallery": "Изображения для галереи"
+    }
+    return descriptions.get(img_type, f"Изображения типа {img_type}")
+
+
+def _get_max_files_for_type(img_type: str) -> int:
+    """Получить максимальное количество файлов для типа"""
+    limits = {
+        "logo": 1,
+        "favicon": 1,
+        "background": 3,
+        "slider": 10,
+        "banner": 5,
+        "gallery": 20
+    }
+    return limits.get(img_type, 5)
 
 
 @router.post("/api/sync-template-variables")
@@ -1286,7 +1857,6 @@ async def get_template_analysis(request: Request):
     """Получить анализ шаблонов - найденные переменные, проблемы синтаксиса"""
     try:
         from app.utils.template_parser import TemplateParser
-        from pathlib import Path
         
         parser = TemplateParser()
         
@@ -1366,4 +1936,5 @@ async def get_translations(
     except Exception as e:
         logger.error(f"Ошибка получения переводов: {e}")
         return {"success": False, "message": "Ошибка получения переводов"}
+
 

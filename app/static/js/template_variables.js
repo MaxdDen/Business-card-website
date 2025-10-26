@@ -5,12 +5,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         'load_error', 'no_variables', 'sync_loading', 'sync_completed', 'added', 'skipped',
         'sync_error', 'analysis_loading', 'analysis_completed', 'templates', 'variables',
         'analysis_error', 'no_templates', 'problems', 'file', 'unclosed_tag', 'click_refresh_to_load',
-        'errors_and_issues', 'no_errors_found', 'click_analyze_to_check'
+        'errors_and_issues', 'no_errors_found', 'click_analyze_to_check', 'variable_filters',
+        'all_variables', 'text_variables', 'image_variables', 'seo_variables', 'click_sync_to_load'
     ]);
     const syncBtn = document.getElementById('sync-btn');
     const analyzeBtn = document.getElementById('analyze-btn');
     const refreshBtn = document.getElementById('refresh-btn');
     const notifications = document.getElementById('notifications');
+    
+    // Фильтры
+    const filterAll = document.getElementById('filter-all');
+    const filterTexts = document.getElementById('filter-texts');
+    const filterImages = document.getElementById('filter-images');
+    const filterSeo = document.getElementById('filter-seo');
     
     // Обработчики кнопок
     syncBtn.addEventListener('click', syncVariables);
@@ -19,6 +26,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         loadStatistics();
         clearNotifications();
     });
+    
+    // Обработчики фильтров
+    filterAll.addEventListener('click', () => setFilter('all'));
+    filterTexts.addEventListener('click', () => setFilter('texts'));
+    filterImages.addEventListener('click', () => setFilter('images'));
+    filterSeo.addEventListener('click', () => setFilter('seo'));
     
     // Функция показа уведомлений
     function showNotification(message, type = 'info') {
@@ -68,6 +81,71 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         } catch (error) {
             console.error('Ошибка загрузки статистики:', error);
+        }
+    }
+
+    // Загрузка данных переменных
+    async function loadVariablesData() {
+        try {
+            // Загружаем данные для всех типов переменных
+            const [textsResponse, imagesResponse, seoResponse] = await Promise.all([
+                fetch('/cms/api/template-variables').then(r => r.json()),
+                fetch('/cms/api/dynamic-images').then(r => r.json()),
+                fetch('/cms/api/dynamic-seo').then(r => r.json())
+            ]);
+
+            // Обновляем содержимое секций
+            updateSectionContent('texts-content', textsResponse, 'texts');
+            updateSectionContent('images-content', imagesResponse, 'images');
+            updateSectionContent('seo-content', seoResponse, 'seo');
+
+        } catch (error) {
+            console.error('Ошибка загрузки данных переменных:', error);
+        }
+    }
+
+    // Обновление содержимого секции
+    function updateSectionContent(containerId, data, type) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        if (data.success && data.variables && data.variables.length > 0) {
+            const variables = data.variables;
+            let html = '<div class="space-y-4">';
+            
+            variables.forEach(variable => {
+                const statusClass = variable.in_database ? 'text-green-600' : 'text-red-600';
+                const statusText = variable.in_database ? 'In Database' : 'Missing';
+                
+                html += `
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-medium text-gray-900 dark:text-white">${variable.key}</h4>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Page: ${variable.page}</p>
+                                <p class="text-sm ${statusClass}">${statusText}</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass.includes('green') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    ${statusText}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = `
+                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <p class="mt-2">${t.click_sync_to_load || 'Click "Sync Variables" to load'}</p>
+                </div>
+            `;
         }
     }
     
@@ -154,22 +232,72 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
+    // Функция установки фильтра
+    function setFilter(filterType) {
+        // Обновляем активную кнопку
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active', 'bg-blue-600', 'text-white');
+            btn.classList.add('bg-gray-200', 'text-gray-700');
+        });
+        
+        const activeBtn = document.getElementById(`filter-${filterType}`);
+        activeBtn.classList.add('active', 'bg-blue-600', 'text-white');
+        activeBtn.classList.remove('bg-gray-200', 'text-gray-700');
+        
+        // Показываем/скрываем секции
+        const sections = {
+            'all': ['texts-section', 'images-section', 'seo-section'],
+            'texts': ['texts-section'],
+            'images': ['images-section'],
+            'seo': ['seo-section']
+        };
+        
+        document.querySelectorAll('[id$="-section"]').forEach(section => {
+            section.style.display = 'none';
+        });
+        
+        sections[filterType].forEach(sectionId => {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.style.display = 'block';
+            }
+        });
+    }
+
     // Синхронизация переменных
     async function syncVariables() {
         syncBtn.disabled = true;
         syncBtn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>${t.sync_loading || 'Syncing...'}`;
         
         try {
-            const response = await fetch('/cms/api/sync-template-variables', {
-                method: 'POST'
-            });
-            const data = await response.json();
+            // Синхронизируем все типы переменных
+            const responses = await Promise.all([
+                fetch('/cms/api/sync-template-variables', { method: 'POST' }),
+                fetch('/cms/api/dynamic-images/sync', { method: 'POST' }),
+                fetch('/cms/api/dynamic-seo/sync', { method: 'POST' })
+            ]);
             
-            if (data.success) {
-                showNotification(`${t.sync_completed || 'Sync completed'}: ${data.results.added_variables} ${t.added || 'added'}, ${data.results.skipped_variables} ${t.skipped || 'skipped'}`, 'success');
+            const results = await Promise.all(responses.map(r => r.json()));
+            
+            let totalAdded = 0;
+            let totalSkipped = 0;
+            let hasErrors = false;
+            
+            results.forEach(result => {
+                if (result.success) {
+                    totalAdded += result.results?.added_variables || result.added || 0;
+                    totalSkipped += result.results?.skipped_variables || result.skipped || 0;
+                } else {
+                    hasErrors = true;
+                }
+            });
+            
+            if (!hasErrors) {
+                showNotification(`${t.sync_completed || 'Sync completed'}: ${totalAdded} ${t.added || 'added'}, ${totalSkipped} ${t.skipped || 'skipped'}`, 'success');
                 loadDatabaseVariables();
+                loadVariablesData();
             } else {
-                showNotification(t.sync_error || 'Sync error', 'error');
+                showNotification(`${t.sync_error || 'Sync error'}: Some variables failed to sync`, 'error');
             }
         } catch (error) {
             console.error('Ошибка синхронизации:', error);

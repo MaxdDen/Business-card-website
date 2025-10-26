@@ -44,6 +44,38 @@ def get_text(page: str, key: str, lang: str = get_default_language()) -> str:
         logger.error(f"Ошибка получения текста {page}.{key}.{lang}: {e}")
         return ""
 
+
+def get_all_texts_for_page(page: str, lang: str = get_default_language()) -> dict:
+    """
+    Получить все тексты для страницы из БД
+    
+    Args:
+        page: страница (home, about, catalog, contacts)
+        lang: язык (en, ua, ru)
+    
+    Returns:
+        Словарь {ключ: значение} со всеми текстами страницы
+    """
+    try:
+        # Получаем все тексты для страницы и языка
+        results = query_all(
+            "SELECT key, value FROM texts WHERE page = ? AND lang = ?",
+            (page, lang)
+        )
+        
+        # Преобразуем в словарь
+        texts = {}
+        for row in results:
+            texts[row["key"]] = row["value"]
+        
+        logger.debug(f"Загружено {len(texts)} текстов для {page}.{lang}: {list(texts.keys())}")
+        return texts
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения всех текстов для {page}.{lang}: {e}")
+        return {}
+
+
 def get_seo_data(page: str, lang: str = get_default_language()) -> Dict[str, str]:
     """
     Получить SEO данные для страницы
@@ -73,9 +105,56 @@ def get_seo_data(page: str, lang: str = get_default_language()) -> Dict[str, str
         logger.error(f"Ошибка получения SEO данных {page}.{lang}: {e}")
         return {"title": "", "description": "", "keywords": ""}
 
+def get_image_with_alt(type: str, lang: str = get_default_language(), order: Optional[int] = None) -> Optional[Dict[str, str]]:
+    """
+    Получить изображение с alt-текстом из БД
+    
+    Args:
+        type: тип изображения (logo, slider, background, favicon)
+        lang: язык для alt-текста
+        order: порядок для слайдера (если None, то первое изображение)
+    
+    Returns:
+        Словарь с path, original_path, alt или None
+    """
+    try:
+        if order is not None:
+            # Для слайдера по порядку
+            result = query_one(
+                """SELECT i.path, i.original_path, ia.alt_text 
+                   FROM images i 
+                   LEFT JOIN images_alts ia ON i.id = ia.image_id AND ia.lang = ?
+                   WHERE i.type = ? AND i."order" = ? 
+                   ORDER BY i."order" LIMIT 1""",
+                (lang, type, order)
+            )
+        else:
+            # Для других типов - первое изображение
+            result = query_one(
+                """SELECT i.path, i.original_path, ia.alt_text 
+                   FROM images i 
+                   LEFT JOIN images_alts ia ON i.id = ia.image_id AND ia.lang = ?
+                   WHERE i.type = ? 
+                   ORDER BY i."order" LIMIT 1""",
+                (lang, type)
+            )
+        
+        if result:
+            return {
+                "path": result.get("path", ""),
+                "original_path": result.get("original_path", ""),
+                "alt": result.get("alt_text", "")
+            }
+        
+        return None
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения изображения {type}: {e}")
+        return None
+
 def get_image(type: str, order: Optional[int] = None) -> Optional[Dict[str, str]]:
     """
-    Получить изображение из БД
+    Получить изображение из БД (старая функция для совместимости)
     
     Args:
         type: тип изображения (logo, slider, background, favicon)
@@ -110,9 +189,42 @@ def get_image(type: str, order: Optional[int] = None) -> Optional[Dict[str, str]
         logger.error(f"Ошибка получения изображения {type}: {e}")
         return None
 
+def get_slider_images_with_alt(lang: str = get_default_language()) -> list:
+    """
+    Получить все изображения слайдера с alt-текстами
+    
+    Args:
+        lang: язык для alt-текстов
+    
+    Returns:
+        Список словарей с path, original_path, alt
+    """
+    try:
+        results = query_all(
+            """SELECT i.path, i.original_path, ia.alt_text 
+               FROM images i 
+               LEFT JOIN images_alts ia ON i.id = ia.image_id AND ia.lang = ?
+               WHERE i.type = 'slider' 
+               ORDER BY i."order\"""",
+            (lang,)
+        )
+        
+        return [
+            {
+                "path": row.get("path", ""),
+                "original_path": row.get("original_path", ""),
+                "alt": row.get("alt_text", "")
+            }
+            for row in results
+        ]
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения слайдера: {e}")
+        return []
+
 def get_slider_images() -> list:
     """
-    Получить все изображения слайдера
+    Получить все изображения слайдера (старая функция для совместимости)
     
     Returns:
         Список словарей с path, original_path
@@ -134,6 +246,57 @@ def get_slider_images() -> list:
         logger.error(f"Ошибка получения слайдера: {e}")
         return []
 
+
+def get_all_images_for_template(lang: str = get_default_language()) -> Dict[str, str]:
+    """
+    Получить все изображения для шаблона в новом формате
+    
+    Args:
+        lang: язык для alt-текстов
+    
+    Returns:
+        Словарь с переменными изображений в формате images.ключ
+    """
+    try:
+        # Получаем все изображения с alt-текстами
+        logo = get_image_with_alt("logo", lang)
+        background = get_image_with_alt("background", lang)
+        favicon = get_image_with_alt("favicon", lang)
+        slider_images = get_slider_images_with_alt(lang)
+        
+        images = {}
+        
+        # Основные изображения
+        if logo:
+            images["logo"] = logo.get("path", "")
+            images["logo_alt"] = logo.get("alt", "")
+        
+        if background:
+            images["background"] = background.get("path", "")
+            images["background_alt"] = background.get("alt", "")
+        
+        if favicon:
+            images["favicon"] = favicon.get("path", "")
+            images["favicon_alt"] = favicon.get("alt", "")
+        
+        # Слайдер изображения
+        for i, slider_img in enumerate(slider_images, 1):
+            if slider_img:
+                images[f"slider{i}"] = slider_img.get("path", "")
+                images[f"slider{i}_alt"] = slider_img.get("alt", "")
+        
+        # Заполняем пустые слоты слайдера
+        for i in range(len(slider_images) + 1, 5):
+            images[f"slider{i}"] = ""
+            images[f"slider{i}_alt"] = ""
+        
+        return images
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения переменных изображений: {e}")
+        return {}
+
+
 @router.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     """Главная страница"""
@@ -142,30 +305,21 @@ async def home(request: Request):
     supported_languages = get_supported_languages_from_request(request)
     language_urls = get_language_urls_from_request(request)
     
-    # Получаем тексты
-    texts = {
-        "title": get_text("home", "title", lang),
-        "subtitle": get_text("home", "subtitle", lang),
-        "description": get_text("home", "description", lang),
-        "cta_text": get_text("home", "cta_text", lang)
-    }
+    # Получаем все тексты динамически
+    texts = get_all_texts_for_page("home", lang)
     
     # Получаем SEO данные
     seo_data = get_seo_data("home", lang)
     
-    # Получаем изображения
-    logo = get_image("logo")
-    background = get_image("background")
-    slider_images = get_slider_images()
+    # Получаем изображения в новом формате
+    images = get_all_images_for_template(lang)
     
     return templates.TemplateResponse("public/home.html", {
         "request": request,
         "lang": lang,
         "texts": texts,
         "seo": seo_data,
-        "logo": logo,
-        "background": background,
-        "slider_images": slider_images,
+        "images": images,
         "supported_languages": supported_languages,
         "language_urls": language_urls
     })
@@ -178,19 +332,21 @@ async def about(request: Request):
     supported_languages = get_supported_languages_from_request(request)
     language_urls = get_language_urls_from_request(request)
     
-    texts = {
-        "title": get_text("about", "title", lang),
-        "subtitle": get_text("about", "subtitle", lang),
-        "description": get_text("about", "description", lang)
-    }
+    # Получаем все тексты динамически
+    texts = get_all_texts_for_page("about", lang)
     
+    # Получаем SEO данные
     seo_data = get_seo_data("about", lang)
+    
+    # Получаем изображения в новом формате
+    images = get_all_images_for_template(lang)
     
     return templates.TemplateResponse("public/about.html", {
         "request": request,
         "lang": lang,
         "texts": texts,
         "seo": seo_data,
+        "images": images,
         "supported_languages": supported_languages,
         "language_urls": language_urls
     })
@@ -203,19 +359,21 @@ async def catalog(request: Request):
     supported_languages = get_supported_languages_from_request(request)
     language_urls = get_language_urls_from_request(request)
     
-    texts = {
-        "title": get_text("catalog", "title", lang),
-        "subtitle": get_text("catalog", "subtitle", lang),
-        "description": get_text("catalog", "description", lang)
-    }
+    # Получаем все тексты динамически
+    texts = get_all_texts_for_page("catalog", lang)
     
+    # Получаем SEO данные
     seo_data = get_seo_data("catalog", lang)
+    
+    # Получаем изображения в новом формате
+    images = get_all_images_for_template(lang)
     
     return templates.TemplateResponse("public/catalog.html", {
         "request": request,
         "lang": lang,
         "texts": texts,
         "seo": seo_data,
+        "images": images,
         "supported_languages": supported_languages,
         "language_urls": language_urls
     })
@@ -228,21 +386,21 @@ async def contacts(request: Request):
     supported_languages = get_supported_languages_from_request(request)
     language_urls = get_language_urls_from_request(request)
     
-    texts = {
-        "title": get_text("contacts", "title", lang),
-        "subtitle": get_text("contacts", "subtitle", lang),
-        "description": get_text("contacts", "description", lang),
-        "phone": get_text("contacts", "phone", lang),
-        "address": get_text("contacts", "address", lang)
-    }
+    # Получаем все тексты динамически
+    texts = get_all_texts_for_page("contacts", lang)
     
+    # Получаем SEO данные
     seo_data = get_seo_data("contacts", lang)
+    
+    # Получаем изображения в новом формате
+    images = get_all_images_for_template(lang)
     
     return templates.TemplateResponse("public/contacts.html", {
         "request": request,
         "lang": lang,
         "texts": texts,
         "seo": seo_data,
+        "images": images,
         "supported_languages": supported_languages,
         "language_urls": language_urls
     })

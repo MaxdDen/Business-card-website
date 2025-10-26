@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- SEO Meta Tags -->
-    <title>{% if seo and seo.title %}{{ seo.title }}{% else %}{{ texts.title or 'Business Card' }}{% endif %}</title>
-    <meta name="description" content="{% if seo and seo.description %}{{ seo.description }}{% else %}{{ texts.description or '' }}{% endif %}">
-    {% if seo and seo.keywords %}<meta name="keywords" content="{{ seo.keywords }}">{% endif %}
+    <title>{% if seo.title %}{{ seo.title }}{% else %}{{ texts.title or 'Business Card' }}{% endif %}</title>
+    <meta name="description" content="{% if seo.description %}{{ seo.description }}{% else %}{{ texts.description or '' }}{% endif %}">
+    {% if seo.keywords %}<meta name="keywords" content="{{ seo.keywords }}">{% endif %}
     
     <!-- Favicon -->
-    {% if favicon %}
-    <link rel="icon" type="image/x-icon" href="/{{ favicon.path }}">
+    {% if images.favicon %}
+    <link rel="icon" type="image/x-icon" href="/uploads/{{ images.favicon }}">
     {% else %}
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     {% endif %}
@@ -29,8 +29,8 @@
             <div class="flex justify-between items-center h-16">
                 <!-- Logo -->
                 <div class="flex items-center">
-                    {% if logo %}
-                    <img src="/{{ logo.path }}" alt="Logo" class="h-8 w-auto">
+                    {% if images.logo %}
+                    <img src="/uploads/{{ images.logo }}" alt="{{ images.logo_alt or 'Logo' }}" class="h-8 w-auto">
                     {% endif %}
                     <span class="ml-2 text-xl font-bold text-gray-900 dark:text-white">
                         {{ texts.title or 'Business Card' }}
