@@ -23,7 +23,7 @@ def get_text(page: str, key: str, lang: str = get_default_language()) -> str:
     Получить текст из БД с кэшированием
     
     Args:
-        page: страница (home, about, catalog, contacts)
+        page: страница (динамически определяется из app/templates/public/)
         key: ключ поля (title, subtitle, description, etc.)
         lang: язык (en, ua, ru)
     
@@ -50,7 +50,7 @@ def get_all_texts_for_page(page: str, lang: str = get_default_language()) -> dic
     Получить все тексты для страницы из БД
     
     Args:
-        page: страница (home, about, catalog, contacts)
+        page: страница (динамически определяется из app/templates/public/)
         lang: язык (en, ua, ru)
     
     Returns:
@@ -152,43 +152,6 @@ def get_image_with_alt(type: str, lang: str = get_default_language(), order: Opt
         logger.error(f"Ошибка получения изображения {type}: {e}")
         return None
 
-def get_image(type: str, order: Optional[int] = None) -> Optional[Dict[str, str]]:
-    """
-    Получить изображение из БД (старая функция для совместимости)
-    
-    Args:
-        type: тип изображения (logo, slider, background, favicon)
-        order: порядок для слайдера (если None, то первое изображение)
-    
-    Returns:
-        Словарь с path, original_path или None
-    """
-    try:
-        if order is not None:
-            # Для слайдера по порядку
-            result = query_one(
-                "SELECT path, original_path FROM images WHERE type = ? AND \"order\" = ? ORDER BY \"order\"",
-                (type, order)
-            )
-        else:
-            # Для других типов - первое изображение
-            result = query_one(
-                "SELECT path, original_path FROM images WHERE type = ? ORDER BY \"order\" LIMIT 1",
-                (type,)
-            )
-        
-        if result:
-            return {
-                "path": result.get("path", ""),
-                "original_path": result.get("original_path", "")
-            }
-        
-        return None
-        
-    except Exception as e:
-        logger.error(f"Ошибка получения изображения {type}: {e}")
-        return None
-
 def get_slider_images_with_alt(lang: str = get_default_language()) -> list:
     """
     Получить все изображения слайдера с alt-текстами
@@ -214,30 +177,6 @@ def get_slider_images_with_alt(lang: str = get_default_language()) -> list:
                 "path": row.get("path", ""),
                 "original_path": row.get("original_path", ""),
                 "alt": row.get("alt_text", "")
-            }
-            for row in results
-        ]
-        
-    except Exception as e:
-        logger.error(f"Ошибка получения слайдера: {e}")
-        return []
-
-def get_slider_images() -> list:
-    """
-    Получить все изображения слайдера (старая функция для совместимости)
-    
-    Returns:
-        Список словарей с path, original_path
-    """
-    try:
-        results = query_all(
-            "SELECT path, original_path FROM images WHERE type = 'slider' ORDER BY \"order\""
-        )
-        
-        return [
-            {
-                "path": row.get("path", ""),
-                "original_path": row.get("original_path", "")
             }
             for row in results
         ]
@@ -472,3 +411,29 @@ async def set_language_api(language: str = Form(...)):
     set_language_cookie(response, language)
     
     return response
+
+
+# API endpoint для получения публичных переводов
+@router.get("/api/translations")
+async def get_public_translations(module: str, lang: str = None, request: Request = None):
+    """Получить переводы для публичных страниц"""
+    try:
+        # Если язык не указан, получаем из запроса
+        if not lang:
+            lang = get_language_from_request(request)
+        
+        # Валидация модулей для публичных страниц
+        valid_modules = ["header"]
+        if module not in valid_modules:
+            return {"success": False, "message": f"Недопустимый модуль. Доступные: {', '.join(valid_modules)}"}
+        
+        return {
+            "success": True,
+            "translations": translations,
+            "module": module,
+            "lang": lang
+        }
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения публичных переводов: {e}")
+        return {"success": False, "message": "Ошибка получения переводов"}

@@ -87,17 +87,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Загрузка данных переменных
     async function loadVariablesData() {
         try {
-            // Загружаем данные для всех типов переменных
-            const [textsResponse, imagesResponse, seoResponse] = await Promise.all([
-                fetch('/cms/api/template-variables').then(r => r.json()),
-                fetch('/cms/api/dynamic-images').then(r => r.json()),
-                fetch('/cms/api/dynamic-seo').then(r => r.json())
-            ]);
-
-            // Обновляем содержимое секций
-            updateSectionContent('texts-content', textsResponse, 'texts');
-            updateSectionContent('images-content', imagesResponse, 'images');
-            updateSectionContent('seo-content', seoResponse, 'seo');
+            // Загружаем данные переменных шаблонов
+            const response = await fetch('/cms/api/template-variables');
+            const data = await response.json();
+            
+            if (data.success) {
+                // Обновляем содержимое секции переменных
+                updateSectionContent('texts-content', data, 'texts');
+            } else {
+                console.error('Ошибка загрузки данных переменных:', data.error);
+            }
 
         } catch (error) {
             console.error('Ошибка загрузки данных переменных:', error);
@@ -270,34 +269,28 @@ document.addEventListener('DOMContentLoaded', async function() {
         syncBtn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>${t.sync_loading || 'Syncing...'}`;
         
         try {
-            // Синхронизируем все типы переменных
-            const responses = await Promise.all([
-                fetch('/cms/api/sync-template-variables', { method: 'POST' }),
-                fetch('/cms/api/dynamic-images/sync', { method: 'POST' }),
-                fetch('/cms/api/dynamic-seo/sync', { method: 'POST' })
-            ]);
-            
-            const results = await Promise.all(responses.map(r => r.json()));
-            
-            let totalAdded = 0;
-            let totalSkipped = 0;
-            let hasErrors = false;
-            
-            results.forEach(result => {
-                if (result.success) {
-                    totalAdded += result.results?.added_variables || result.added || 0;
-                    totalSkipped += result.results?.skipped_variables || result.skipped || 0;
-                } else {
-                    hasErrors = true;
-                }
+            // Синхронизируем переменные шаблонов
+            const response = await fetch('/cms/api/sync-template-variables', { 
+                method: 'POST',
+                credentials: 'include'
             });
             
-            if (!hasErrors) {
-                showNotification(`${t.sync_completed || 'Sync completed'}: ${totalAdded} ${t.added || 'added'}, ${totalSkipped} ${t.skipped || 'skipped'}`, 'success');
-                loadDatabaseVariables();
-                loadVariablesData();
+            const result = await response.json();
+            
+            if (result.success) {
+                const added = result.results?.added_variables || 0;
+                const skipped = result.results?.skipped_variables || 0;
+                const errors = result.results?.errors || 0;
+                
+                showNotification(
+                    `${t.sync_completed || 'Sync completed'}: ${added} ${t.added || 'added'}, ${skipped} ${t.skipped || 'skipped'}, ${errors} ${t.errors || 'errors'}`,
+                    errors > 0 ? 'warning' : 'success'
+                );
+                
+                // Обновляем статистику после синхронизации
+                await loadStatistics();
             } else {
-                showNotification(`${t.sync_error || 'Sync error'}: Some variables failed to sync`, 'error');
+                showNotification(`${t.sync_error || 'Sync error'}: ${result.message || 'Unknown error'}`, 'error');
             }
         } catch (error) {
             console.error('Ошибка синхронизации:', error);

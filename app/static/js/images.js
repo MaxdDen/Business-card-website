@@ -31,7 +31,6 @@ let currentImageAlts = {};
 const languages = window.supportedLanguages || ['en'];
 const langNames = window.getLanguageNames ? window.getLanguageNames() : {'en': 'EN'};
 
-
 // Initialize page
 document.addEventListener('DOMContentLoaded', async function() {
     await loadTranslations();
@@ -51,7 +50,7 @@ async function loadTranslations() {
         if (response.ok) {
             const data = await response.json();
             if (data.success) {
-                translations = data.translations;
+                translations = data.translations.images || {};
             } else {
                 console.error('❌ Failed to load translations:', data.message);
             }
@@ -61,6 +60,11 @@ async function loadTranslations() {
     } catch (error) {
         console.error('💥 Error loading translations:', error);
     }
+}
+
+// Get translation with fallback
+function t(key, fallback = null) {
+    return translations[key] || fallback || key;
 }
 
 // Get current language from URL
@@ -268,14 +272,14 @@ function createImageBlock(image) {
                     <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                     </svg>
-                    Change
+                    ${t('change', 'Change')}
                 </button>
                 <button onclick="deleteImage(${image.id})" 
                     class="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
                     <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                     </svg>
-                    Delete
+                    ${t('delete', 'Delete')}
                 </button>
             </div>
             
@@ -285,7 +289,7 @@ function createImageBlock(image) {
                 <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                 </svg>
-                Save
+                ${t('save', 'Save')}
             </button>
         </div>
     `;
@@ -322,21 +326,21 @@ async function handleImageUpload(imageId, fileInput) {
             if (data.success) {
                 // Update preview
                 updateImagePreview(imageId, data.image.path);
-                showNotification('Image updated successfully', 'success');
+                showNotification(t('image_updated', 'Image updated successfully'), 'success');
                 
                 // Reload images
                 loadImages();
             } else {
-                showNotification('Failed to update image: ' + data.message, 'error');
+                showNotification(t('update_failed', 'Failed to update image') + ': ' + data.message, 'error');
             }
         } else {
             const errorText = await response.text();
             console.error('Upload failed:', response.status, errorText);
-            showNotification('Upload failed: ' + response.status, 'error');
+            showNotification(t('upload_failed', 'Upload failed') + ': ' + response.status, 'error');
         }
     } catch (error) {
         console.error('Upload error:', error);
-        showNotification('Upload error: ' + error.message, 'error');
+        showNotification(t('upload_error', 'Upload error') + ': ' + error.message, 'error');
     }
 }
 
@@ -418,14 +422,14 @@ async function saveImageData(imageId) {
             return;
         }
         
-        showNotification('Image data saved successfully', 'success');
+        showNotification(t('image_data_saved', 'Image data saved successfully'), 'success');
         
         // Reload images to reflect changes
         loadImages();
         
     } catch (error) {
         console.error('Save error:', error);
-        showNotification('Save error: ' + error.message, 'error');
+        showNotification(t('save_error', 'Save error') + ': ' + error.message, 'error');
     }
 }
 
@@ -460,7 +464,7 @@ function setupDragAndDrop(type) {
 
 // Delete image
 async function deleteImage(imageId) {
-    if (!confirm(translations.confirm_delete || 'Are you sure you want to delete this image?')) {
+    if (!confirm(t('confirm_delete', 'Are you sure you want to delete this image?'))) {
         return;
     }
     
@@ -472,14 +476,14 @@ async function deleteImage(imageId) {
         const result = await response.json();
         
         if (result.success) {
-            showNotification(translations.image_deleted || 'Image deleted successfully', 'success');
+            showNotification(t('image_deleted', 'Image deleted successfully'), 'success');
             loadImages(); // Reload images
         } else {
-            showNotification(result.message || (translations.delete_error || 'Delete error'), 'error');
+            showNotification(result.message || t('delete_error', 'Delete error'), 'error');
         }
     } catch (error) {
         console.error('Delete error:', error);
-        showNotification(translations.delete_error || 'Delete error', 'error');
+        showNotification(t('delete_error', 'Delete error'), 'error');
     }
 }
 
@@ -499,11 +503,11 @@ async function moveImage(imageId, direction) {
         if (result.success) {
             loadImages(); // Reload images
         } else {
-            showNotification(result.message || (translations.move_error || 'Move error'), 'error');
+            showNotification(result.message || t('move_error', 'Move error'), 'error');
         }
     } catch (error) {
         console.error('Move error:', error);
-        showNotification(translations.move_error || 'Move error', 'error');
+        showNotification(t('move_error', 'Move error'), 'error');
     }
 }
 
@@ -523,11 +527,11 @@ async function moveImageOrder(draggedId, targetId) {
         if (result.success) {
             loadImages(); // Reload images
         } else {
-            showNotification(result.message || (translations.move_error || 'Move error'), 'error');
+            showNotification(result.message || t('move_error', 'Move error'), 'error');
         }
     } catch (error) {
         console.error('Move error:', error);
-        showNotification(translations.move_error || 'Move error', 'error');
+        showNotification(t('move_error', 'Move error'), 'error');
     }
 }
 
@@ -578,17 +582,17 @@ async function saveImageAlts(imageId, alts) {
         if (response.ok) {
             const data = await response.json();
             if (data.success) {
-                showNotification('Alt-тексты сохранены', 'success');
+                showNotification(t('alts_saved', 'Alt-тексты сохранены'), 'success');
                 return true;
             } else {
-                showNotification(data.message || 'Ошибка сохранения alt-текстов', 'error');
+                showNotification(data.message || t('alts_save_error', 'Ошибка сохранения alt-текстов'), 'error');
             }
         } else {
-            showNotification('Ошибка сохранения alt-текстов', 'error');
+            showNotification(t('alts_save_error', 'Ошибка сохранения alt-текстов'), 'error');
         }
     } catch (error) {
         console.error('Error saving image alts:', error);
-        showNotification('Ошибка сохранения alt-текстов', 'error');
+        showNotification(t('alts_save_error', 'Ошибка сохранения alt-текстов'), 'error');
     }
     return false;
 }
@@ -600,17 +604,17 @@ function showAltTextModal(imageId, imageName) {
     modal.innerHTML = `
         <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
             <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                Alt-тексты для: ${imageName}
+                ${t('alts_for', 'Alt-тексты для')}: ${imageName}
             </h3>
             <div id="altTextsContainer" class="space-y-4">
                 <!-- Alt texts will be loaded here -->
             </div>
             <div class="flex justify-end space-x-3 mt-6">
                 <button onclick="closeAltTextModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
-                    Отмена
+                    ${t('cancel', 'Отмена')}
                 </button>
                 <button onclick="saveAltTexts(${imageId})" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                    Сохранить
+                    ${t('save', 'Сохранить')}
                 </button>
             </div>
         </div>
@@ -628,10 +632,10 @@ function showAltTextModal(imageId, imageName) {
         
         languages.forEach(lang => {
             const langName = fullNames[lang] || lang;
-            const placeholder = lang === 'ru' ? 'Введите alt-текст' : 
-                              lang === 'en' ? 'Enter alt text' : 
-                              lang === 'ua' ? 'Введіть alt-текст' : 
-                              'Enter alt text';
+            const placeholder = lang === 'ru' ? t('enter_alt_ru', 'Введите alt-текст') : 
+                              lang === 'en' ? t('enter_alt_en', 'Enter alt text') : 
+                              lang === 'ua' ? t('enter_alt_ua', 'Введіть alt-текст') : 
+                              t('enter_alt_en', 'Enter alt text');
             
             container.innerHTML += `
                 <div>
@@ -688,7 +692,7 @@ async function loadAndDisplayAlts(imageId) {
             
             container.innerHTML = languages.map(lang => {
                 const altText = alts[lang] || '';
-                const displayText = altText ? altText.substring(0, 30) + (altText.length > 30 ? '...' : '') : 'Не задано';
+                const displayText = altText ? altText.substring(0, 30) + (altText.length > 30 ? '...' : '') : t('not_set', 'Не задано');
                 return `<div><span class="text-gray-500">${langNames[lang]}:</span> ${displayText}</div>`;
             }).join('');
         }

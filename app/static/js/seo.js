@@ -1,5 +1,11 @@
 // SEO management functionality
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    // Load translations
+    const t = await window.translations.getTranslations('seo', [
+        'loading_seo_fields', 'try_again', 'no_seo_fields', 'add_seo_variables_sync',
+        'enter_title', 'enter_description', 'enter_keywords', 'seo_saved', 'save_error'
+    ]);
+    
     const pageSelect = document.getElementById('page-select');
     const langSelect = document.getElementById('lang-select');
     const seoForm = document.getElementById('seo-form');
@@ -44,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <p class="mt-2">Загрузка SEO полей...</p>
+                <p class="mt-2">${t.loading_seo_fields || 'Загрузка SEO полей...'}</p>
             </div>
         `;
     }
@@ -64,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </svg>
                 <p class="mt-2">${message}</p>
                 <button onclick="loadDynamicSeoFields()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                    Попробовать снова
+                    ${t.try_again || 'Попробовать снова'}
                 </button>
             </div>
         `;
@@ -78,8 +84,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
-                    <p class="mt-2">SEO поля не найдены</p>
-                    <p class="text-sm">Добавьте SEO переменные в шаблоны или синхронизируйте их</p>
+                    <p class="mt-2">${t.no_seo_fields || 'SEO поля не найдены'}</p>
+                    <p class="text-sm">${t.add_seo_variables_sync || 'Добавьте SEO переменные в шаблоны или синхронизируйте их'}</p>
                 </div>
             `;
             return;
@@ -156,16 +162,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const keywords = keywordsField ? keywordsField.value : '';
         
         if (previewTitle) {
-            previewTitle.textContent = title || 'Введите заголовок';
+            previewTitle.textContent = title || t.enter_title || 'Введите заголовок';
         }
         if (previewDescription) {
-            previewDescription.textContent = description || 'Введите описание';
+            previewDescription.textContent = description || t.enter_description || 'Введите описание';
         }
         
         if (htmlPreview) {
-            htmlPreview.textContent = `<title>${title || 'Введите заголовок'}</title>
-<meta name="description" content="${description || 'Введите описание'}">
-<meta name="keywords" content="${keywords || 'Введите ключевые слова'}">`;
+            htmlPreview.textContent = `<title>${title || t.enter_title || 'Введите заголовок'}</title>
+<meta name="description" content="${description || t.enter_description || 'Введите описание'}">
+<meta name="keywords" content="${keywords || t.enter_keywords || 'Введите ключевые слова'}">`;
         }
     }
 
@@ -221,13 +227,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             
             if (data.success) {
-                showStatus('success', '{{ t.seo_saved or "SEO data saved successfully" }}');
+                showStatus('success', t.seo_saved || 'SEO data saved successfully');
             } else {
                 showStatus('error', data.message);
             }
         } catch (error) {
             console.error('Ошибка сохранения SEO данных:', error);
-            showStatus('error', '{{ t.save_error or "Save error" }}');
+            showStatus('error', t.save_error || 'Save error');
         }
     }
 

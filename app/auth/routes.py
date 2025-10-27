@@ -11,6 +11,7 @@ from app.auth.security_headers import set_secure_cookie, delete_secure_cookie
 from app.database.db import query_one, execute
 from email_validator import validate_email, EmailNotValidError
 from app.site.middleware import get_language_from_request, get_supported_languages_from_request, get_language_urls_from_request, get_cms_url
+from app.site.routes import get_text
 
 
 router = APIRouter()
@@ -28,11 +29,11 @@ def _get_user_by_email(email: str) -> Optional[dict]:
     return query_one("SELECT id, email, password_hash, role FROM users WHERE email = ?", (email,))
 
 
-def get_text(page: str, key: str, lang: str = "en") -> str:
-    """Получить текст из БД"""
+def get_crm_text(page: str, key: str, lang: str = "en") -> str:
+    """Получить текст из БД texts_crm"""
     try:
         result = query_one(
-            "SELECT value FROM texts WHERE page = ? AND key = ? AND lang = ?",
+            "SELECT value FROM texts_crm WHERE page = ? AND key = ? AND lang = ?",
             (page, key, lang)
         )
         return result.get("value", "") if result else ""
@@ -88,23 +89,9 @@ def get_login_translations(lang: str) -> Dict[str, str]:
     ]
     
     for key in translation_keys:
-        translations[key] = get_text('login', key, lang)
+        translations[key] = get_crm_text('login', key, lang)
     
     return translations
-
-
-def get_header_translations(lang: str) -> Dict[str, str]:
-    """Получить переводы для Header"""
-    translations = {}
-    
-    # Список ключей переводов для Header
-    translation_keys = ['theme', 'home']
-    
-    for key in translation_keys:
-        translations[key] = get_text('header', key, lang)
-    
-    return translations
-
 
 
 
@@ -118,10 +105,8 @@ async def login_form(request: Request):
     # Получаем URL для редиректа после логина
     next_url = request.query_params.get("next", get_cms_redirect_url(lang))
     
-    # Получаем переводы для логина и header
+    # Получаем переводы для логина
     translations = get_login_translations(lang)
-    header_translations = get_header_translations(lang)
-    translations.update(header_translations)
     
     context = {
         "request": request,
@@ -171,8 +156,6 @@ async def login(request: Request, response: Response, email: str = Form(...), pa
     supported_languages = get_supported_languages_from_request(request)
     language_urls = get_language_urls_from_request(request)
     translations = get_login_translations(lang)
-    header_translations = get_header_translations(lang)
-    translations.update(header_translations)
     
     # Получаем URL для редиректа после логина
     next_url = request.query_params.get("next", get_cms_redirect_url(lang))
@@ -278,7 +261,7 @@ def get_register_translations(lang: str) -> Dict[str, str]:
     ]
     
     for key in translation_keys:
-        translations[key] = get_text('register', key, lang)
+        translations[key] = get_crm_text('register', key, lang)
     
     return translations
 
@@ -289,10 +272,8 @@ async def register_form(request: Request):
     supported_languages = get_supported_languages_from_request(request)
     language_urls = get_language_urls_from_request(request)
     
-    # Получаем переводы для регистрации и header
+    # Получаем переводы для регистрации
     translations = get_register_translations(lang)
-    header_translations = get_header_translations(lang)
-    translations.update(header_translations)
     
     context = {
         "request": request,
@@ -337,8 +318,6 @@ async def register(request: Request, email: str = Form(...), password: str = For
     supported_languages = get_supported_languages_from_request(request)
     language_urls = get_language_urls_from_request(request)
     translations = get_register_translations(lang)
-    header_translations = get_header_translations(lang)
-    translations.update(header_translations)
     
     # validate email
     try:

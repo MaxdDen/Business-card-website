@@ -132,7 +132,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 // Загрузить список пользователей
 async function loadUsers() {
     try {
-        console.log('Загружаем пользователей...');
         const response = await fetch('/cms/api/users', {
             method: 'GET',
             headers: {
@@ -141,17 +140,14 @@ async function loadUsers() {
             },
             credentials: 'include' // Важно для передачи cookies с аутентификацией
         });
-        console.log('Response status:', response.status);
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const data = await response.json();
-        console.log('Response data:', data);
         
         if (data.success) {
-            console.log('Пользователи загружены:', data.users);
             renderUsers(data.users);
         } else {
             console.error('Ошибка загрузки пользователей:', data.message);
@@ -170,7 +166,6 @@ async function loadUsers() {
 
 // Отобразить список пользователей
 function renderUsers(users) {
-    console.log('Отображаем пользователей:', users);
     const tbody = document.getElementById('usersTableBody');
     
     if (!tbody) {
@@ -181,7 +176,6 @@ function renderUsers(users) {
     tbody.innerHTML = '';
     
     if (!users || users.length === 0) {
-        console.log('Нет пользователей для отображения');
         tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4">Нет пользователей</td></tr>';
         return;
     }

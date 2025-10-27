@@ -10,6 +10,7 @@ class SessionMonitor {
         this.warningTimeMs = 300000; // Предупреждение за 5 минут до истечения
         this.isWarningShown = false;
         this.warningModal = null;
+        this.translations = {};
         
         this.init();
     }
@@ -17,9 +18,41 @@ class SessionMonitor {
     init() {
         // Запускаем мониторинг только на CMS страницах
         if (this.isCMSPage()) {
+            this.loadTranslations();
             this.startMonitoring();
             this.setupVisibilityChangeHandler();
         }
+    }
+    
+    // Load translations
+    async loadTranslations() {
+        try {
+            const currentLang = this.getCurrentLanguage();
+            const response = await fetch(`/cms/api/translations?lang=${currentLang}`, {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    this.translations = data.translations.session_monitor || {};
+                }
+            }
+        } catch (error) {
+            console.error('Error loading session monitor translations:', error);
+        }
+    }
+    
+    // Get current language
+    getCurrentLanguage() {
+        const path = window.location.pathname;
+        const langMatch = path.match(/\/cms\/([a-z]{2})\//);
+        return langMatch ? langMatch[1] : 'en';
+    }
+    
+    // Get translation with fallback
+    t(key, fallback = null) {
+        return this.translations[key] || fallback || key;
     }
     
     isCMSPage() {
@@ -117,22 +150,22 @@ class SessionMonitor {
                     </div>
                     <div class="ml-3">
                         <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
-                            Сессия скоро истечет
+                            ${this.t('session_expiring', 'Сессия скоро истечет')}
                         </h3>
                     </div>
                 </div>
                 <div class="mb-4">
                     <p class="text-sm text-gray-600 dark:text-gray-400">
-                        Ваша сессия истечет через ${Math.ceil(timeUntilExpiry / 60000)} минут. 
-                        Пожалуйста, сохраните ваши изменения.
+                        ${this.t('session_expires_in', 'Ваша сессия истечет через')} ${Math.ceil(timeUntilExpiry / 60000)} ${this.t('minutes', 'минут')}. 
+                        ${this.t('save_changes', 'Пожалуйста, сохраните ваши изменения')}.
                     </p>
                 </div>
                 <div class="flex justify-end space-x-3">
                     <button type="button" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600" onclick="sessionMonitor.hideExpiryWarning()">
-                        Понятно
+                        ${this.t('understood', 'Понятно')}
                     </button>
                     <button type="button" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700" onclick="sessionMonitor.refreshSession()">
-                        Продлить сессию
+                        ${this.t('extend_session', 'Продлить сессию')}
                     </button>
                 </div>
             </div>
@@ -161,7 +194,7 @@ class SessionMonitor {
                 this.hideExpiryWarning();
                 this.isWarningShown = false;
                 // Показываем уведомление об успехе
-                this.showSuccessMessage('Сессия продлена');
+                this.showSuccessMessage(this.t('session_extended', 'Сессия продлена'));
             } else {
                 this.redirectToLogin();
             }
@@ -201,10 +234,10 @@ class SessionMonitor {
                     </svg>
                 </div>
                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                    Сессия истекла
+                    ${this.t('session_expired', 'Сессия истекла')}
                 </h3>
                 <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    Вы будете перенаправлены на страницу входа...
+                    ${this.t('redirecting_to_login', 'Вы будете перенаправлены на страницу входа...')}
                 </p>
                 <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
             </div>

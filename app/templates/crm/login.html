@@ -3,36 +3,36 @@
 {% block title %}{{ t.title or 'Login' }} - CMS{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-950 text-gray-100 flex items-center justify-center p-6">
+<div class="flex items-center justify-center p-4 sm:p-6 min-h-[calc(100vh-108px)]">
     <div class="w-full max-w-md">
-        <div class="bg-gray-900/60 backdrop-blur rounded-2xl border border-gray-800 shadow-xl p-8">
+        <div class="bg-white dark:bg-gray-800 backdrop-blur rounded-2xl border border-gray-200 dark:border-gray-800 shadow-xl p-6 sm:p-8 w-full">
             
             {% if error %}
-            <div class="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 text-red-200 px-4 py-2 text-sm">
+            <div class="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-200 px-4 py-2 text-sm">
                 {{ error }}
             </div>
             {% endif %}
             <h1 class="text-2xl font-semibold tracking-tight">{{ t.title or 'Login' }}</h1>
-            <p class="mt-1 text-sm text-gray-400">{{ t.subtitle or 'Sign in to your account' }}</p>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ t.subtitle or 'Sign in to your account' }}</p>
 
             <form class="mt-8 space-y-6" method="POST" action="/{{ lang }}/login" novalidate>
                 <input type="hidden" name="csrf_token" value="{{ request.cookies.get('csrftoken', '') }}" />
                 <input type="hidden" name="next" value="{{ next_url }}" />
                 <div class="space-y-4">
                     <div class="space-y-2">
-                        <label for="email" class="text-sm text-gray-300">{{ t.email or 'Email' }}</label>
+                        <label for="email" class="text-sm text-gray-700 dark:text-gray-300">{{ t.email or 'Email' }}</label>
                         <input id="email" name="email" type="email" autocomplete="email" required
-                               class="w-full rounded-lg bg-gray-900 border border-gray-800 px-3 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                               placeholder="you@example.com" />
+                                class="w-full rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="you@example.com" />
                     </div>
                     <div class="space-y-2">
                         <div class="flex items-center justify-between">
-                            <label for="password" class="text-sm text-gray-300">{{ t.password or 'Password' }}</label>
-                            <a href="#" class="text-xs text-gray-400 hover:text-gray-200">{{ t.forgot_password or 'Forgot password?' }}</a>
+                            <label for="password" class="text-sm text-gray-700 dark:text-gray-300">{{ t.password or 'Password' }}</label>
+                            <a href="#" class="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">{{ t.forgot_password or 'Forgot password?' }}</a>
                         </div>
                         <input id="password" name="password" type="password" autocomplete="current-password" minlength="8" required
-                               class="w-full rounded-lg bg-gray-900 border border-gray-800 px-3 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                               placeholder="{{ t.password_placeholder or 'Enter password' }}" />
+                                class="w-full rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="{{ t.password_placeholder or 'Enter password' }}" />
                     </div>
                 </div>
 
@@ -44,9 +44,9 @@
                     {{ t.login_button or 'Login' }}
                 </button>
 
-                <p class="text-sm text-gray-400 text-center">
+                <p class="text-sm text-gray-600 dark:text-gray-400 text-center">
                     {{ t.no_account or 'No account?' }}
-                    <a href="/{{ lang }}/register" class="text-gray-200 underline underline-offset-4 hover:no-underline">{{ t.register_link or 'Register' }}</a>
+                    <a href="/{{ lang }}/register" class="text-gray-700 dark:text-gray-200 underline underline-offset-4 hover:no-underline">{{ t.register_link or 'Register' }}</a>
                 </p>
             </form>
         </div>

@@ -78,10 +78,6 @@ AVAILABLE_TESTS = {
         "file": "test_best_practices_links.py",
         "description": "Тест исправлений ссылок по best practices"
     },
-    "header_translations": {
-        "file": "test_header_translations.py",
-        "description": "Тест переводов в header.html"
-    },
     "unit": {
         "file": "test_validation.py",
         "description": "Юнит-тесты для утилит валидации"
@@ -153,6 +149,10 @@ AVAILABLE_TESTS = {
     "dynamic_images_seo": {
         "file": "test_dynamic_images_seo.py",
         "description": "Тест динамических изображений и SEO"
+    },
+    "dashboard_texts_count_fix": {
+        "file": "test_dashboard_texts_count_fix.py",
+        "description": "Тест исправления подсчета текстовых переменных в dashboard"
     },
     "session_expiry": {
         "file": "test_session_expiry.py",

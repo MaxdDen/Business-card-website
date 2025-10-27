@@ -1,5 +1,11 @@
 // Texts editor functionality
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    // Load translations
+    const t = await window.translations.getTranslations('cms_texts', [
+        'loading_fields', 'try_again', 'no_fields_found', 'add_variables_sync',
+        'texts_saved', 'save_error', 'save_error_texts'
+    ]);
+    
     const pageSelect = document.getElementById('page-select');
     const langSelect = document.getElementById('lang-select');
     const form = document.getElementById('texts-form');
@@ -39,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <p class="mt-2">Загрузка полей...</p>
+                <p class="mt-2">${t.loading_fields || 'Загрузка полей...'}</p>
             </div>
         `;
     }
@@ -59,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </svg>
                 <p class="mt-2">${message}</p>
                 <button onclick="loadDynamicFields()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                    Попробовать снова
+                    ${t.try_again || 'Попробовать снова'}
                 </button>
             </div>
         `;
@@ -73,8 +79,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
-                    <p class="mt-2">Поля для редактирования не найдены</p>
-                    <p class="text-sm">Добавьте переменные в шаблоны или синхронизируйте их</p>
+                    <p class="mt-2">${t.no_fields_found || 'Поля для редактирования не найдены'}</p>
+                    <p class="text-sm">${t.add_variables_sync || 'Добавьте переменные в шаблоны или синхронизируйте их'}</p>
                 </div>
             `;
             return;
@@ -113,11 +119,6 @@ document.addEventListener('DOMContentLoaded', function() {
         dynamicFieldsForm.innerHTML = fieldsHTML;
     }
 
-    // Загрузить тексты при изменении страницы или языка (старая функция для совместимости)
-    function loadTexts() {
-        loadDynamicFields();
-    }
-
     // Сохранить тексты
     form.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -146,14 +147,14 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showNotification('Тексты успешно сохранены', 'success');
+                showNotification(t.texts_saved || 'Тексты успешно сохранены', 'success');
             } else {
-                showNotification('Ошибка сохранения: ' + data.message, 'error');
+                showNotification((t.save_error || 'Ошибка сохранения') + ': ' + data.message, 'error');
             }
         })
         .catch(error => {
             console.error('Ошибка:', error);
-            showNotification('Ошибка сохранения текстов', 'error');
+            showNotification(t.save_error_texts || 'Ошибка сохранения текстов', 'error');
         });
     });
 

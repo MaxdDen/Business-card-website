@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, UploadFile, File, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse, RedirectResponse
-from app.auth.security import get_current_user, create_access_token, decode_token
+from app.auth.security import get_current_user, create_access_token, decode_token, hash_password
 from app.database.db import query_one, query_all, execute
 from app.utils.cache import text_cache, image_cache
 from app.site.middleware import get_language_from_request, get_supported_languages_from_request, get_language_urls_from_request, get_cms_url
 from app.site.config import get_default_language, get_supported_languages
 from app.site.routes import get_text
+from app.utils.template_parser import TemplateParser
 from app.utils.images import (
     validate_image_file, optimize_image, save_original_image, 
     generate_unique_filename, get_image_info
@@ -26,6 +27,33 @@ router = APIRouter(tags=["cms"])
 templates = Jinja2Templates(directory="app/templates")
 
 logger = logging.getLogger(__name__)
+
+
+def get_crm_text(page: str, key: str, lang: str = get_default_language()) -> str:
+    """
+    Получить текст из БД texts_crm с кэшированием
+    
+    Args:
+        page: страница (dashboard, cms_texts, cms_images, etc.)
+        key: ключ поля (title, subtitle, description, etc.)
+        lang: язык (en, ua, ru)
+    
+    Returns:
+        Значение текста или пустую строку
+    """
+    try:
+        # Получаем из БД
+        result = query_one(
+            "SELECT value FROM texts_crm WHERE page = ? AND key = ? AND lang = ?",
+            (page, key, lang)
+        )
+        
+        value = result.get("value", "") if result else ""
+        return value
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения CRM текста {page}.{key}.{lang}: {e}")
+        return ""
 
 
 def get_current_user_dependency(request: Request) -> Dict[str, Any]:
@@ -126,8 +154,10 @@ def get_dashboard_stats() -> Dict[str, Any]:
         languages_count = len(languages)
         active_languages = [lang["lang"] for lang in languages]
         
-        # Количество текстовых блоков
-        texts_count = query_one("SELECT COUNT(*) as count FROM texts")["count"]
+        # Количество уникальных текстовых переменных из публичных шаблонов
+        # Подсчитываем уникальные комбинации page+key из таблицы texts (публичные шаблоны)
+        texts_count_result = query_one("SELECT COUNT(DISTINCT page || '.' || key) as count FROM texts")
+        texts_count = texts_count_result["count"] if texts_count_result else 0
         
         # Количество пользователей
         users_count = query_one("SELECT COUNT(*) as count FROM users")["count"]
@@ -163,20 +193,7 @@ def get_dashboard_translations(lang: str) -> Dict[str, str]:
     ]
     
     for key in translation_keys:
-        translations[key] = get_text('dashboard', key, lang)
-    
-    return translations
-
-
-def get_header_translations(lang: str) -> Dict[str, str]:
-    """Получить переводы для Header"""
-    translations = {}
-    
-    # Список ключей переводов для Header
-    translation_keys = ['theme', 'home']
-    
-    for key in translation_keys:
-        translations[key] = get_text('header', key, lang)
+        translations[key] = get_crm_text('dashboard', key, lang)
     
     return translations
 
@@ -193,7 +210,7 @@ def get_cms_texts_translations(lang: str) -> Dict[str, str]:
     ]
     
     for key in translation_keys:
-        translations[key] = get_text('cms_texts', key, lang)
+        translations[key] = get_crm_text('cms_texts', key, lang)
     
     return translations
 
@@ -213,7 +230,7 @@ def get_cms_images_translations(lang: str) -> Dict[str, str]:
     ]
     
     for key in translation_keys:
-        translations[key] = get_text('cms_images', key, lang)
+        translations[key] = get_crm_text('cms_images', key, lang)
     
     return translations
 
@@ -233,7 +250,7 @@ def get_cms_seo_translations(lang: str) -> Dict[str, str]:
     ]
     
     for key in translation_keys:
-        translations[key] = get_text('cms_seo', key, lang)
+        translations[key] = get_crm_text('cms_seo', key, lang)
     
     return translations
 
@@ -251,7 +268,7 @@ def get_cms_users_translations(lang: str) -> Dict[str, str]:
     ]
     
     for key in translation_keys:
-        translations[key] = get_text('cms_users', key, lang)
+        translations[key] = get_crm_text('cms_users', key, lang)
     
     return translations
 
@@ -273,7 +290,7 @@ def get_cms_template_variables_translations(lang: str) -> Dict[str, str]:
     ]
     
     for key in translation_keys:
-        translations[key] = get_text('cms_template_variables', key, lang)
+        translations[key] = get_crm_text('cms_template_variables', key, lang)
     
     return translations
 
@@ -292,7 +309,7 @@ def get_cms_dynamic_images_translations(lang: str) -> Dict[str, str]:
     ]
     
     for key in translation_keys:
-        translations[key] = get_text('cms_dynamic_images', key, lang)
+        translations[key] = get_crm_text('cms_dynamic_images', key, lang)
     
     return translations
 
@@ -311,7 +328,7 @@ def get_cms_dynamic_seo_translations(lang: str) -> Dict[str, str]:
     ]
     
     for key in translation_keys:
-        translations[key] = get_text('cms_dynamic_seo', key, lang)
+        translations[key] = get_crm_text('cms_dynamic_seo', key, lang)
     
     return translations
 
@@ -343,8 +360,6 @@ async def dashboard(request: Request, current_user: Dict[str, Any] = Depends(get
         
         # Получаем переводы для Dashboard и Header
         translations = get_dashboard_translations(lang)
-        header_translations = get_header_translations(lang)
-        translations.update(header_translations)
         
         return templates.TemplateResponse(
             "crm/dashboard.html",
@@ -375,8 +390,6 @@ async def texts_editor(request: Request, current_user: Dict[str, Any] = Depends(
     
     # Получаем переводы для CMS Texts Editor и Header
     translations = get_cms_texts_translations(lang)
-    header_translations = get_header_translations(lang)
-    translations.update(header_translations)
     
     return templates.TemplateResponse(
         "crm/texts.html",
@@ -402,8 +415,6 @@ async def images_manager(request: Request, current_user: Dict[str, Any] = Depend
     
     # Получаем переводы для CMS Images Manager и Header
     translations = get_cms_images_translations(lang)
-    header_translations = get_header_translations(lang)
-    translations.update(header_translations)
     
     # Получаем переменные изображений для шаблона
     images = get_all_images_for_template(lang)
@@ -433,8 +444,6 @@ async def seo_manager(request: Request, current_user: Dict[str, Any] = Depends(g
     
     # Получаем переводы для CMS SEO Manager и Header
     translations = get_cms_seo_translations(lang)
-    header_translations = get_header_translations(lang)
-    translations.update(header_translations)
     
     return templates.TemplateResponse(
         "crm/seo.html",
@@ -465,8 +474,6 @@ async def users_manager(request: Request, current_user: Dict[str, Any] = Depends
     
     # Получаем переводы для CMS Users Manager и Header
     translations = get_cms_users_translations(lang)
-    header_translations = get_header_translations(lang)
-    translations.update(header_translations)
     
     return templates.TemplateResponse(
         "crm/users.html",
@@ -492,8 +499,6 @@ async def template_variables_manager(request: Request, current_user: Dict[str, A
     
     # Получаем переводы для CMS Template Variables Manager и Header
     translations = get_cms_template_variables_translations(lang)
-    header_translations = get_header_translations(lang)
-    translations.update(header_translations)
     
     return templates.TemplateResponse(
         "crm/template_variables.html",
@@ -539,7 +544,7 @@ async def get_texts(page: str, lang: str, current_user: Dict[str, Any] = Depends
     """Получить тексты для указанной страницы и языка"""
     try:
         # Валидация параметров
-        valid_pages = ["home", "about", "catalog", "contacts"]
+        valid_pages = TemplateParser.get_available_pages()
         valid_langs = get_supported_languages()
         
         if page not in valid_pages:
@@ -563,7 +568,7 @@ async def get_texts(page: str, lang: str, current_user: Dict[str, Any] = Depends
         # Получаем из БД
         texts_query = """
             SELECT key, value 
-            FROM texts 
+            FROM texts_crm 
             WHERE page = ? AND lang = ?
         """
         results = query_all(texts_query, (page, lang))
@@ -601,7 +606,7 @@ async def save_texts(request: Request, current_user: Dict[str, Any] = Depends(ge
         texts = data.get("texts", {})
         
         # Валидация параметров
-        valid_pages = ["home", "about", "catalog", "contacts"]
+        valid_pages = TemplateParser.get_available_pages()
         valid_langs = get_supported_languages()
         
         if not page or page not in valid_pages:
@@ -615,7 +620,6 @@ async def save_texts(request: Request, current_user: Dict[str, Any] = Depends(ge
         
         # Валидация ключей текстов - используем динамические поля из парсера
         try:
-            from app.utils.template_parser import TemplateParser
             parser = TemplateParser()
             all_variables = parser.get_database_variables(page)
             
@@ -648,27 +652,27 @@ async def save_texts(request: Request, current_user: Dict[str, Any] = Depends(ge
             if value:  # Сохраняем только непустые значения
                 # Проверяем, существует ли запись
                 existing = query_one(
-                    "SELECT id FROM texts WHERE page = ? AND key = ? AND lang = ?",
+                    "SELECT id FROM texts_crm WHERE page = ? AND key = ? AND lang = ?",
                     (page, key, lang)
                 )
                 
                 if existing:
                     # Обновляем существующую запись
                     execute(
-                        "UPDATE texts SET value = ? WHERE page = ? AND key = ? AND lang = ?",
+                        "UPDATE texts_crm SET value = ? WHERE page = ? AND key = ? AND lang = ?",
                         (str(value), page, key, lang)
                     )
                 else:
                     # Создаем новую запись
                     execute(
-                        "INSERT INTO texts (page, key, lang, value) VALUES (?, ?, ?, ?)",
+                        "INSERT INTO texts_crm (page, key, lang, value) VALUES (?, ?, ?, ?)",
                         (page, key, lang, str(value))
                     )
         
         # Удаляем пустые значения из БД
         for key in valid_keys:
             if key not in texts or not texts[key]:
-                delete_query = "DELETE FROM texts WHERE page = ? AND key = ? AND lang = ?"
+                delete_query = "DELETE FROM texts_crm WHERE page = ? AND key = ? AND lang = ?"
                 execute(delete_query, (page, key, lang))
         
         # Инвалидируем кэш для этой страницы и языка
@@ -1226,7 +1230,7 @@ async def get_seo(page: str, lang: str, current_user: Dict[str, Any] = Depends(g
     """Получить SEO данные для указанной страницы и языка"""
     try:
         # Валидация параметров
-        valid_pages = ["home", "about", "catalog", "contacts"]
+        valid_pages = TemplateParser.get_available_pages()
         valid_langs = get_supported_languages()
         
         if page not in valid_pages:
@@ -1274,7 +1278,7 @@ async def save_seo(request: Request, current_user: Dict[str, Any] = Depends(get_
         seo_data = data.get("seo", {})
         
         # Валидация параметров
-        valid_pages = ["home", "about", "catalog", "contacts"]
+        valid_pages = TemplateParser.get_available_pages()
         valid_langs = get_supported_languages()
         
         if not page or page not in valid_pages:
@@ -1591,8 +1595,6 @@ async def template_variables_page(request: Request, current_user: Dict[str, Any]
 async def get_template_variables(request: Request, page: str = None):
     """Получить все переменные шаблонов из базы данных"""
     try:
-        from app.utils.template_parser import TemplateParser
-        
         parser = TemplateParser()
         variables = parser.get_database_variables(page)
         
@@ -1612,8 +1614,6 @@ async def get_template_variables(request: Request, page: str = None):
 async def get_dynamic_fields(request: Request, page: str, lang: str, field_type: str = "texts"):
     """Получить динамические поля для указанной страницы, языка и типа"""
     try:
-        from app.utils.template_parser import TemplateParser
-        
         parser = TemplateParser()
         
         # Получаем все переменные для страницы
@@ -1834,9 +1834,6 @@ async def sync_template_variables(request: Request):
 async def get_missing_variables(request: Request):
     """Получить переменные, которые есть в шаблонах, но отсутствуют в БД"""
     try:
-        from app.utils.template_parser import TemplateParser
-        from app.site.config import get_supported_languages
-        
         parser = TemplateParser()
         supported_languages = get_supported_languages()
         missing = parser.get_missing_variables(supported_languages)
@@ -1923,8 +1920,6 @@ async def get_translations(
             translations = get_cms_seo_translations(lang)
         elif module == "cms_template_variables":
             translations = get_cms_template_variables_translations(lang)
-        elif module == "header":
-            translations = get_header_translations(lang)
         
         return {
             "success": True,

@@ -9,6 +9,7 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = BASE_DIR / "data"
 DB_PATH = Path(os.getenv("DATABASE_PATH", "data/app.db"))
 SCHEMA_PATH = BASE_DIR / "app" / "database" / "init.sql"
+CRM_TRANSLATIONS_PATH = BASE_DIR / "app" / "database" / "crm_translations.sql"
 
 
 def _dict_factory(cursor: sqlite3.Cursor, row: Tuple[Any, ...]) -> Dict[str, Any]:
@@ -20,8 +21,16 @@ def ensure_database_initialized() -> None:
     created = not DB_PATH.exists()
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute("PRAGMA foreign_keys = ON;")
+        
+        # Загружаем основную схему
         sql = SCHEMA_PATH.read_text(encoding="utf-8")
         conn.executescript(sql)
+        
+        # Загружаем переводы CRM если файл существует
+        if CRM_TRANSLATIONS_PATH.exists():
+            crm_sql = CRM_TRANSLATIONS_PATH.read_text(encoding="utf-8")
+            conn.executescript(crm_sql)
+        
         conn.commit()
 
 

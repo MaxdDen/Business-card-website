@@ -152,29 +152,6 @@ def sanitize_filename(filename: str) -> str:
     return filename
 
 
-def validate_page_key(page: str, key: str) -> Tuple[bool, str]:
-    """
-    Валидация ключа страницы для текстов
-    
-    Args:
-        page: название страницы
-        key: ключ текста
-    
-    Returns:
-        (is_valid, error_message)
-    """
-    valid_pages = ["home", "about", "catalog", "contacts"]
-    valid_keys = ["title", "subtitle", "description", "cta_text", "phone", "address", "email"]
-    
-    if page not in valid_pages:
-        return False, f"Недопустимая страница. Доступные: {', '.join(valid_pages)}"
-    
-    if key not in valid_keys:
-        return False, f"Недопустимый ключ. Доступные: {', '.join(valid_keys)}"
-    
-    return True, ""
-
-
 def validate_language(lang: str) -> Tuple[bool, str]:
     """
     Валидация языка

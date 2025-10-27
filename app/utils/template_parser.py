@@ -22,24 +22,59 @@ class TemplateParser:
         self.variable_pattern = re.compile(r'\{\{\s*([^}]+)\s*\}\}')
         self.conditional_pattern = re.compile(r'\{\%\s*if\s+([^%]+)\s*\%\}')
         
+        # Поддерживаемые namespace'ы для парсинга
+        self.supported_namespaces = {'texts', 'seo', 'images'}
+        
         # Системные переменные, которые исключаем из парсинга
         self.system_variables = {
             'lang', 'request', 'supported_languages', 'language_urls',
             'loop.index', 'loop.first', 'loop.last', 'loop.length',
-            'temp', 'tmp', 'debug', 'config'
+            'csrf_token', 'user_email', 'current_user', 'translations',
+            'cms_url', 'get_cms_url'
         }
         
-        # Маппинг путей к страницам
-        self.page_mapping = {
-            'public/home.html': 'home',
-            'public/about.html': 'about', 
-            'public/catalog.html': 'catalog',
-            'public/contacts.html': 'contacts',
-            'public/base.html': 'base'
+    def _is_crm_page(self, page: str) -> bool:
+        """Определить, является ли страница CRM страницей"""
+        crm_pages = {
+            'dashboard', 'cms_texts', 'cms_images', 'cms_seo', 'cms_users', 
+            'cms_template_variables', 'cms_dynamic_images', 'cms_dynamic_seo',
+            'login', 'register'
         }
+        return page in crm_pages
+    
+    @staticmethod
+    def get_available_pages(templates_dir: str = "app/templates") -> List[str]:
+        """
+        Получает список доступных страниц из папки app/templates/public/
         
-        # Поддерживаемые namespace для парсинга
-        self.supported_namespaces = {'texts', 'seo', 'images'}
+        Args:
+            templates_dir: Путь к папке templates (по умолчанию "app/templates")
+        
+        Returns:
+            Список названий страниц (без расширения .html)
+        """
+        try:
+            public_templates_dir = Path(templates_dir) / "public"
+            
+            if not public_templates_dir.exists():
+                logger.warning(f"Директория {public_templates_dir} не найдена")
+                return []
+            
+            # Получаем все HTML файлы в папке public
+            html_files = list(public_templates_dir.glob("*.html"))
+            
+            # Извлекаем названия страниц (без расширения)
+            pages = []
+            for html_file in html_files:
+                page_name = html_file.stem  # Получаем имя файла без расширения
+                pages.append(page_name)
+            
+            logger.debug(f"Найдены страницы: {sorted(pages)}")
+            return sorted(pages)
+            
+        except Exception as e:
+            logger.error(f"Ошибка получения списка страниц: {e}")
+            return []
     
     def extract_variables_from_file(self, template_path: str) -> Set[str]:
         """
@@ -59,36 +94,115 @@ class TemplateParser:
             
             # Ищем переменные в {{ }}
             for match in self.variable_pattern.findall(content):
-                var = match.strip()
-                # Очищаем от фильтров и функций
-                if '|' in var:
-                    var = var.split('|')[0].strip()
-                if ' or ' in var:
-                    var = var.split(' or ')[0].strip()
+                var_expression = match.strip()
                 
-                # Проверяем, что это переменная для парсинга
-                if self._is_parseable_variable(var):
-                    variables.add(var)
+                # Извлекаем все переменные из выражения (включая выражения с or)
+                expression_vars = self._extract_variables_from_expression(var_expression)
+                for var in expression_vars:
+                    if self._is_parseable_variable(var):
+                        variables.add(var)
             
             # Ищем переменные в условиях
             for match in self.conditional_pattern.findall(content):
-                var = match.strip()
-                # Очищаем от операторов сравнения
-                if ' == ' in var:
-                    var = var.split(' == ')[0].strip()
-                elif ' != ' in var:
-                    var = var.split(' != ')[0].strip()
-                elif ' in ' in var:
-                    var = var.split(' in ')[0].strip()
+                condition = match.strip()
                 
-                if self._is_parseable_variable(var):
-                    variables.add(var)
+                # Извлекаем все переменные из логического выражения
+                condition_vars = self._extract_variables_from_condition(condition)
+                for var in condition_vars:
+                    if self._is_parseable_variable(var):
+                        variables.add(var)
             
             logger.debug(f"Найдено {len(variables)} переменных в {template_path}: {variables}")
             return variables
             
         except Exception as e:
             logger.error(f"Ошибка парсинга шаблона {template_path}: {e}")
+            return set()
+    
+    def _extract_variables_from_expression(self, expression: str) -> Set[str]:
+        """
+        Извлекает все переменные из выражения (включая выражения с or)
+        
+        Args:
+            expression: Выражение (например: "images.slider1_alt or 'Slider image 1'")
+            
+        Returns:
+            Множество найденных переменных
+        """
+        variables = set()
+        
+        try:
+            # Очищаем от фильтров (|)
+            if '|' in expression:
+                expression = expression.split('|')[0].strip()
+            
+            # Разбиваем выражение по ' or '
+            parts = expression.split(' or ')
+            
+            for part in parts:
+                part = part.strip()
+                
+                # Очищаем от кавычек и лишних пробелов
+                part = part.strip('\'"').strip()
+                
+                # Проверяем, что это переменная (содержит точку и не является строкой)
+                if '.' in part and not part.startswith(('"', "'")):
+                    # Проверяем, что это не функция (нет скобок)
+                    if '(' not in part and ')' not in part:
+                        variables.add(part)
+            
+            logger.debug(f"Извлечено {len(variables)} переменных из выражения '{expression}': {variables}")
+            return variables
+            
+        except Exception as e:
+            logger.error(f"Ошибка извлечения переменных из выражения '{expression}': {e}")
+            return set()
+    
+    def _extract_variables_from_condition(self, condition: str) -> Set[str]:
+        """
+        Извлекает все переменные из логического выражения
+        
+        Args:
+            condition: Логическое выражение (например: "images.slider1 or images.slider2")
+            
+        Returns:
+            Множество найденных переменных
+        """
+        variables = set()
+        
+        try:
+            # Разбиваем выражение по логическим операторам
+            # Поддерживаем: or, and, ==, !=, in, not in
+            operators = [' or ', ' and ', ' == ', ' != ', ' in ', ' not in ']
+            
+            # Заменяем операторы на разделители
+            condition_copy = condition
+            for op in operators:
+                condition_copy = condition_copy.replace(op, '|SPLIT|')
+            
+            # Разбиваем по разделителям
+            parts = condition_copy.split('|SPLIT|')
+            
+            for part in parts:
+                part = part.strip()
+                
+                # Очищаем от скобок и лишних пробелов
+                part = part.strip('()').strip()
+                
+                # Очищаем от кавычек
+                part = part.strip('\'"').strip()
+                
+                # Проверяем, что это переменная (содержит точку и не является строкой)
+                if '.' in part and not part.startswith(('"', "'")) and not part.startswith('loop.'):
+                    # Проверяем, что это не функция (нет скобок)
+                    if '(' not in part and ')' not in part:
+                        variables.add(part)
+            
+            logger.debug(f"Извлечено {len(variables)} переменных из условия '{condition}': {variables}")
+            return variables
+            
+        except Exception as e:
+            logger.error(f"Ошибка извлечения переменных из условия '{condition}': {e}")
             return set()
     
     def _is_parseable_variable(self, variable: str) -> bool:
@@ -126,7 +240,7 @@ class TemplateParser:
     
     def get_page_from_path(self, template_path: str) -> str:
         """
-        Определяет страницу по пути к шаблону
+        Определяет страницу по пути к шаблону (динамически)
         
         Args:
             template_path: Путь к файлу шаблона
@@ -158,17 +272,17 @@ class TemplateParser:
                 # Нормализуем путь для кроссплатформенности
                 template_name = template_name.replace('\\', '/')
                 
-                # Возвращаем страницу из маппинга
-                page = self.page_mapping.get(template_name, 'unknown')
-                logger.debug(f"Определена страница {page} для {template_path} (template_name: {template_name}, mapping: {self.page_mapping})")
-                return page
+                # Если это файл из папки public, извлекаем название страницы
+                if template_name.startswith('public/') and template_name.endswith('.html'):
+                    page_name = Path(template_name).stem
+                    logger.debug(f"Определена страница {page_name} для {template_path}")
+                    return page_name
                 
             except ValueError:
                 # Если не можем найти относительный путь, пробуем по имени файла
-                template_name = 'public/' + path.name
-                page = self.page_mapping.get(template_name, 'unknown')
-                logger.debug(f"Определена страница {page} для {template_path} (по имени файла)")
-                return page
+                page_name = path.stem
+                logger.debug(f"Определена страница {page_name} для {template_path} (по имени файла)")
+                return page_name
                 
         except Exception as e:
             logger.error(f"Ошибка определения страницы для {template_path}: {e}")
@@ -243,10 +357,16 @@ class TemplateParser:
                 
                 logger.info(f"Синхронизация страницы {page} с {len(variables)} переменными")
                 
+                # Специальная обработка для base.html как глобального шаблона
+                if page == 'base':
+                    self._sync_global_variables(variables, supported_languages, results)
+                    continue
+                
                 # Группируем переменные по namespace
                 texts_vars = set()
                 seo_vars = set()
                 images_vars = set()
+                images_alt_vars = set()  # Новый набор для alt-атрибутов
                 
                 for variable in variables:
                     # Извлекаем namespace и ключ из переменной (texts.title -> texts, title)
@@ -263,7 +383,11 @@ class TemplateParser:
                     elif namespace == 'seo':
                         seo_vars.add(key)
                     elif namespace == 'images':
-                        images_vars.add(key)
+                        # Проверяем, является ли это alt-атрибутом
+                        if key.endswith('_alt'):
+                            images_alt_vars.add(key)
+                        else:
+                            images_vars.add(key)
                     else:
                         logger.warning(f"Неподдерживаемый namespace: {namespace}")
                 
@@ -278,6 +402,10 @@ class TemplateParser:
                 # Синхронизируем переменные изображений
                 for key in images_vars:
                     self._sync_image_variable(page, key, supported_languages, results)
+                
+                # Синхронизируем alt-атрибуты изображений
+                for key in images_alt_vars:
+                    self._sync_image_alt_variable(page, key, supported_languages, results)
             
             logger.info(f"Синхронизация завершена: {results}")
             return results
@@ -289,18 +417,21 @@ class TemplateParser:
     
     def _sync_text_variable(self, page: str, key: str, supported_languages: List[str], results: Dict[str, int]):
         """Синхронизация текстовой переменной"""
+        # Определяем таблицу в зависимости от типа страницы
+        table_name = "texts_crm" if self._is_crm_page(page) else "texts"
+        
         for lang in supported_languages:
             try:
                 # Проверяем, существует ли уже запись
                 existing = query_one(
-                    "SELECT id FROM texts WHERE page = ? AND key = ? AND lang = ?",
+                    f"SELECT id FROM {table_name} WHERE page = ? AND key = ? AND lang = ?",
                     (page, key, lang)
                 )
                 
                 if not existing:
                     # Добавляем новую переменную с пустым значением
                     execute(
-                        "INSERT INTO texts (page, key, lang, value) VALUES (?, ?, ?, ?)",
+                        f"INSERT INTO {table_name} (page, key, lang, value) VALUES (?, ?, ?, ?)",
                         (page, key, lang, "")
                     )
                     results['added_variables'] += 1
@@ -378,8 +509,8 @@ class TemplateParser:
             if not existing:
                 # Создаем запись изображения с пустыми значениями
                 execute(
-                    "INSERT INTO images (name, path, original_path, type, \"order\") VALUES (?, ?, ?, ?, ?)",
-                    ("", "", "", key, 0)
+                    "INSERT INTO images (name, path, original_path, type) VALUES (?, ?, ?, ?)",
+                    ("", "", "", key)
                 )
                 results['added_variables'] += 1
                 logger.debug(f"Добавлена переменная изображения: {page}.{key}")
@@ -407,6 +538,120 @@ class TemplateParser:
         except Exception as e:
             results['errors'] += 1
             logger.error(f"Ошибка добавления переменной изображения {page}.{key}: {e}")
+    
+    def _sync_image_alt_variable(self, page: str, key: str, supported_languages: List[str], results: Dict[str, int]):
+        """Синхронизация alt-атрибута изображения"""
+        try:
+            # Извлекаем тип изображения из ключа (slider1_alt -> slider1)
+            image_type = key.replace('_alt', '')
+            
+            # Проверяем, существует ли изображение данного типа
+            image_record = query_one(
+                "SELECT id FROM images WHERE type = ?",
+                (image_type,)
+            )
+            
+            if not image_record:
+                # Сначала создаем запись изображения
+                execute(
+                    "INSERT INTO images (name, path, original_path, type) VALUES (?, ?, ?, ?)",
+                    ("", "", "", image_type)
+                )
+                
+                # Получаем ID созданного изображения
+                image_record = query_one(
+                    "SELECT id FROM images WHERE type = ? ORDER BY id DESC LIMIT 1",
+                    (image_type,)
+                )
+                
+                results['added_variables'] += 1
+                logger.debug(f"Создана запись изображения для alt-атрибута: {image_type}")
+            
+            image_id = image_record['id']
+            
+            # Создаем alt-тексты для всех языков
+            for lang in supported_languages:
+                try:
+                    # Проверяем, существует ли уже alt-текст
+                    existing_alt = query_one(
+                        "SELECT id FROM images_alts WHERE image_id = ? AND lang = ?",
+                        (image_id, lang)
+                    )
+                    
+                    if not existing_alt:
+                        # Добавляем новый alt-текст
+                        execute(
+                            "INSERT INTO images_alts (image_id, lang, alt_text) VALUES (?, ?, ?)",
+                            (image_id, lang, "")
+                        )
+                        results['added_variables'] += 1
+                        logger.debug(f"Добавлен alt-текст для изображения: {image_type}.{lang}")
+                    else:
+                        results['skipped_variables'] += 1
+                        logger.debug(f"Alt-текст уже существует: {image_type}.{lang}")
+                        
+                except Exception as e:
+                    results['errors'] += 1
+                    logger.error(f"Ошибка добавления alt-текста {image_type}.{lang}: {e}")
+                    
+        except Exception as e:
+            results['errors'] += 1
+            logger.error(f"Ошибка синхронизации alt-атрибута изображения {page}.{key}: {e}")
+    
+    def _sync_global_variables(self, variables: Set[str], supported_languages: List[str], results: Dict[str, int]):
+        """Синхронизация глобальных переменных из base.html"""
+        try:
+            logger.info(f"Синхронизация глобальных переменных из base.html: {len(variables)} переменных")
+            
+            # Группируем переменные по namespace
+            texts_vars = set()
+            seo_vars = set()
+            images_vars = set()
+            images_alt_vars = set()
+            
+            for variable in variables:
+                # Извлекаем namespace и ключ из переменной
+                if '.' in variable:
+                    namespace = variable.split('.')[0]
+                    key = variable.split('.', 1)[1]
+                else:
+                    namespace = 'texts'  # fallback
+                    key = variable
+                
+                # Группируем по namespace
+                if namespace == 'texts':
+                    texts_vars.add(key)
+                elif namespace == 'seo':
+                    seo_vars.add(key)
+                elif namespace == 'images':
+                    if key.endswith('_alt'):
+                        images_alt_vars.add(key)
+                    else:
+                        images_vars.add(key)
+                else:
+                    logger.warning(f"Неподдерживаемый namespace в глобальных переменных: {namespace}")
+            
+            # Синхронизируем текстовые переменные как глобальные (page = 'global')
+            for key in texts_vars:
+                self._sync_text_variable('global', key, supported_languages, results)
+            
+            # Синхронизируем SEO переменные как глобальные
+            if seo_vars:
+                self._sync_seo_variables('global', seo_vars, supported_languages, results)
+            
+            # Синхронизируем переменные изображений
+            for key in images_vars:
+                self._sync_image_variable('global', key, supported_languages, results)
+            
+            # Синхронизируем alt-атрибуты изображений
+            for key in images_alt_vars:
+                self._sync_image_alt_variable('global', key, supported_languages, results)
+            
+            logger.info("Синхронизация глобальных переменных завершена")
+            
+        except Exception as e:
+            logger.error(f"Ошибка синхронизации глобальных переменных: {e}")
+            results['errors'] += 1
     
     def _sync_images_variables(self, page: str, template_keys: set, supported_languages: List[str], results: Dict[str, int]):
         """Синхронизация переменных изображений"""
@@ -454,10 +699,16 @@ class TemplateParser:
                 
                 logger.info(f"Полная синхронизация страницы {page} с {len(variables)} переменными")
                 
+                # Специальная обработка для base.html как глобального шаблона
+                if page == 'base':
+                    self._sync_global_variables(variables, supported_languages, results)
+                    continue
+                
                 # Группируем переменные по namespace
                 texts_vars = set()
                 seo_vars = set()
                 images_vars = set()
+                images_alt_vars = set()  # Новый набор для alt-атрибутов
                 
                 for variable in variables:
                     if '.' in variable:
@@ -469,7 +720,11 @@ class TemplateParser:
                         elif namespace == 'seo':
                             seo_vars.add(key)
                         elif namespace == 'images':
-                            images_vars.add(key)
+                            # Проверяем, является ли это alt-атрибутом
+                            if key.endswith('_alt'):
+                                images_alt_vars.add(key)
+                            else:
+                                images_vars.add(key)
                     else:
                         # Fallback для старых переменных
                         texts_vars.add(variable)
@@ -485,6 +740,10 @@ class TemplateParser:
                 # Синхронизируем переменные изображений
                 if images_vars:
                     self._sync_images_variables(page, images_vars, supported_languages, results)
+                
+                # Синхронизируем alt-атрибуты изображений
+                for key in images_alt_vars:
+                    self._sync_image_alt_variable(page, key, supported_languages, results)
             
             logger.info(f"Полная синхронизация завершена: {results}")
             return results
@@ -496,10 +755,13 @@ class TemplateParser:
     
     def _full_sync_text_variables(self, page: str, template_keys: set, supported_languages: List[str], results: Dict[str, int]):
         """Полная синхронизация текстовых переменных"""
+        # Определяем таблицу в зависимости от типа страницы
+        table_name = "texts_crm" if self._is_crm_page(page) else "texts"
+        
         # Получаем текущие переменные в БД для этой страницы
         current_db_vars = set()
         db_results = query_all(
-            "SELECT DISTINCT key FROM texts WHERE page = ?",
+            f"SELECT DISTINCT key FROM {table_name} WHERE page = ?",
             (page,)
         )
         for row in db_results:
@@ -511,7 +773,7 @@ class TemplateParser:
             for lang in supported_languages:
                 try:
                     execute(
-                        "INSERT INTO texts (page, key, lang, value) VALUES (?, ?, ?, ?)",
+                        f"INSERT INTO {table_name} (page, key, lang, value) VALUES (?, ?, ?, ?)",
                         (page, key, lang, "")
                     )
                     results['added_variables'] += 1
@@ -525,7 +787,7 @@ class TemplateParser:
         for key in removed_vars:
             try:
                 execute(
-                    "DELETE FROM texts WHERE page = ? AND key = ?",
+                    f"DELETE FROM {table_name} WHERE page = ? AND key = ?",
                     (page, key)
                 )
                 results['removed_variables'] += 1
@@ -654,13 +916,19 @@ class TemplateParser:
         try:
             db_variables = {}
             
-            # Получаем текстовые переменные
+            # Получаем текстовые переменные из обеих таблиц
             if page:
-                query = "SELECT page, key, lang, value FROM texts WHERE page = ? ORDER BY page, key, lang"
+                # Определяем таблицу в зависимости от типа страницы
+                table_name = "texts_crm" if self._is_crm_page(page) else "texts"
+                query = f"SELECT page, key, lang, value FROM {table_name} WHERE page = ? ORDER BY page, key, lang"
                 results = query_all(query, (page,))
             else:
-                query = "SELECT page, key, lang, value FROM texts ORDER BY page, key, lang"
-                results = query_all(query)
+                # Получаем из обеих таблиц
+                query_public = "SELECT page, key, lang, value FROM texts ORDER BY page, key, lang"
+                query_crm = "SELECT page, key, lang, value FROM texts_crm ORDER BY page, key, lang"
+                results_public = query_all(query_public)
+                results_crm = query_all(query_crm)
+                results = results_public + results_crm
             
             for row in results:
                 page_name = row['page']
